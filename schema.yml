@@ -1,0 +1,3391 @@
+openapi: 3.0.3
+info:
+  title: Multi-Tenant Hotel & Serviced Apartments Management API
+  version: 1.0.0
+  description: Production-ready REST API for multi-tenant hotel, property, room, booking,
+    expense, staff management, and analytics.
+paths:
+  /api/v1/bookings/:
+    get:
+      operationId: v1_bookings_list
+      description: |-
+        Reusable ViewSet enforcing tenant-level multi-tenant isolation.
+        Automatically scopes get_queryset() to request.user.tenant_id for non-SuperAdmins.
+        Automatically assigns request.user.tenant to created objects if applicable.
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedBookingList'
+          description: ''
+    post:
+      operationId: v1_bookings_create
+      description: |-
+        Reusable ViewSet enforcing tenant-level multi-tenant isolation.
+        Automatically scopes get_queryset() to request.user.tenant_id for non-SuperAdmins.
+        Automatically assigns request.user.tenant to created objects if applicable.
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BookingRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/BookingRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/BookingRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Booking'
+          description: ''
+  /api/v1/bookings/{id}/:
+    get:
+      operationId: v1_bookings_retrieve
+      description: |-
+        Reusable ViewSet enforcing tenant-level multi-tenant isolation.
+        Automatically scopes get_queryset() to request.user.tenant_id for non-SuperAdmins.
+        Automatically assigns request.user.tenant to created objects if applicable.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this booking.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Booking'
+          description: ''
+    put:
+      operationId: v1_bookings_update
+      description: |-
+        Reusable ViewSet enforcing tenant-level multi-tenant isolation.
+        Automatically scopes get_queryset() to request.user.tenant_id for non-SuperAdmins.
+        Automatically assigns request.user.tenant to created objects if applicable.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this booking.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BookingRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/BookingRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/BookingRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Booking'
+          description: ''
+    patch:
+      operationId: v1_bookings_partial_update
+      description: |-
+        Reusable ViewSet enforcing tenant-level multi-tenant isolation.
+        Automatically scopes get_queryset() to request.user.tenant_id for non-SuperAdmins.
+        Automatically assigns request.user.tenant to created objects if applicable.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this booking.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedBookingRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedBookingRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedBookingRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Booking'
+          description: ''
+    delete:
+      operationId: v1_bookings_destroy
+      description: |-
+        Reusable ViewSet enforcing tenant-level multi-tenant isolation.
+        Automatically scopes get_queryset() to request.user.tenant_id for non-SuperAdmins.
+        Automatically assigns request.user.tenant to created objects if applicable.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this booking.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/bookings/{id}/cancel/:
+    post:
+      operationId: v1_bookings_cancel_create
+      description: |-
+        Reusable ViewSet enforcing tenant-level multi-tenant isolation.
+        Automatically scopes get_queryset() to request.user.tenant_id for non-SuperAdmins.
+        Automatically assigns request.user.tenant to created objects if applicable.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this booking.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BookingRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/BookingRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/BookingRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Booking'
+          description: ''
+  /api/v1/bookings/{id}/check-in/:
+    post:
+      operationId: v1_bookings_check_in_create
+      description: |-
+        Reusable ViewSet enforcing tenant-level multi-tenant isolation.
+        Automatically scopes get_queryset() to request.user.tenant_id for non-SuperAdmins.
+        Automatically assigns request.user.tenant to created objects if applicable.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this booking.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BookingRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/BookingRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/BookingRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Booking'
+          description: ''
+  /api/v1/bookings/{id}/check-out/:
+    post:
+      operationId: v1_bookings_check_out_create
+      description: |-
+        Reusable ViewSet enforcing tenant-level multi-tenant isolation.
+        Automatically scopes get_queryset() to request.user.tenant_id for non-SuperAdmins.
+        Automatically assigns request.user.tenant to created objects if applicable.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this booking.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BookingRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/BookingRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/BookingRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Booking'
+          description: ''
+  /api/v1/bookings/{id}/confirm/:
+    post:
+      operationId: v1_bookings_confirm_create
+      description: |-
+        Reusable ViewSet enforcing tenant-level multi-tenant isolation.
+        Automatically scopes get_queryset() to request.user.tenant_id for non-SuperAdmins.
+        Automatically assigns request.user.tenant to created objects if applicable.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this booking.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BookingRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/BookingRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/BookingRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Booking'
+          description: ''
+  /api/v1/bookings/{id}/record-payment/:
+    post:
+      operationId: v1_bookings_record_payment_create
+      description: |-
+        Reusable ViewSet enforcing tenant-level multi-tenant isolation.
+        Automatically scopes get_queryset() to request.user.tenant_id for non-SuperAdmins.
+        Automatically assigns request.user.tenant to created objects if applicable.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this booking.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BookingRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/BookingRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/BookingRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Booking'
+          description: ''
+  /api/v1/expenses/:
+    get:
+      operationId: v1_expenses_list
+      description: |-
+        Reusable ViewSet enforcing tenant-level multi-tenant isolation.
+        Automatically scopes get_queryset() to request.user.tenant_id for non-SuperAdmins.
+        Automatically assigns request.user.tenant to created objects if applicable.
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedExpenseList'
+          description: ''
+    post:
+      operationId: v1_expenses_create
+      description: |-
+        Reusable ViewSet enforcing tenant-level multi-tenant isolation.
+        Automatically scopes get_queryset() to request.user.tenant_id for non-SuperAdmins.
+        Automatically assigns request.user.tenant to created objects if applicable.
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExpenseRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ExpenseRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ExpenseRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Expense'
+          description: ''
+  /api/v1/expenses/{id}/:
+    get:
+      operationId: v1_expenses_retrieve
+      description: |-
+        Reusable ViewSet enforcing tenant-level multi-tenant isolation.
+        Automatically scopes get_queryset() to request.user.tenant_id for non-SuperAdmins.
+        Automatically assigns request.user.tenant to created objects if applicable.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this expense.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Expense'
+          description: ''
+    put:
+      operationId: v1_expenses_update
+      description: |-
+        Reusable ViewSet enforcing tenant-level multi-tenant isolation.
+        Automatically scopes get_queryset() to request.user.tenant_id for non-SuperAdmins.
+        Automatically assigns request.user.tenant to created objects if applicable.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this expense.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExpenseRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ExpenseRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ExpenseRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Expense'
+          description: ''
+    patch:
+      operationId: v1_expenses_partial_update
+      description: |-
+        Reusable ViewSet enforcing tenant-level multi-tenant isolation.
+        Automatically scopes get_queryset() to request.user.tenant_id for non-SuperAdmins.
+        Automatically assigns request.user.tenant to created objects if applicable.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this expense.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedExpenseRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedExpenseRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedExpenseRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Expense'
+          description: ''
+    delete:
+      operationId: v1_expenses_destroy
+      description: |-
+        Reusable ViewSet enforcing tenant-level multi-tenant isolation.
+        Automatically scopes get_queryset() to request.user.tenant_id for non-SuperAdmins.
+        Automatically assigns request.user.tenant to created objects if applicable.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this expense.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/expenses/categories/:
+    get:
+      operationId: v1_expenses_categories_list
+      description: |-
+        Reusable ViewSet enforcing tenant-level multi-tenant isolation.
+        Automatically scopes get_queryset() to request.user.tenant_id for non-SuperAdmins.
+        Automatically assigns request.user.tenant to created objects if applicable.
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedExpenseCategoryList'
+          description: ''
+    post:
+      operationId: v1_expenses_categories_create
+      description: |-
+        Reusable ViewSet enforcing tenant-level multi-tenant isolation.
+        Automatically scopes get_queryset() to request.user.tenant_id for non-SuperAdmins.
+        Automatically assigns request.user.tenant to created objects if applicable.
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExpenseCategoryRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ExpenseCategoryRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ExpenseCategoryRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExpenseCategory'
+          description: ''
+  /api/v1/expenses/categories/{id}/:
+    get:
+      operationId: v1_expenses_categories_retrieve
+      description: |-
+        Reusable ViewSet enforcing tenant-level multi-tenant isolation.
+        Automatically scopes get_queryset() to request.user.tenant_id for non-SuperAdmins.
+        Automatically assigns request.user.tenant to created objects if applicable.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this expense category.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExpenseCategory'
+          description: ''
+    put:
+      operationId: v1_expenses_categories_update
+      description: |-
+        Reusable ViewSet enforcing tenant-level multi-tenant isolation.
+        Automatically scopes get_queryset() to request.user.tenant_id for non-SuperAdmins.
+        Automatically assigns request.user.tenant to created objects if applicable.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this expense category.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExpenseCategoryRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ExpenseCategoryRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ExpenseCategoryRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExpenseCategory'
+          description: ''
+    patch:
+      operationId: v1_expenses_categories_partial_update
+      description: |-
+        Reusable ViewSet enforcing tenant-level multi-tenant isolation.
+        Automatically scopes get_queryset() to request.user.tenant_id for non-SuperAdmins.
+        Automatically assigns request.user.tenant to created objects if applicable.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this expense category.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedExpenseCategoryRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedExpenseCategoryRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedExpenseCategoryRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExpenseCategory'
+          description: ''
+    delete:
+      operationId: v1_expenses_categories_destroy
+      description: |-
+        Reusable ViewSet enforcing tenant-level multi-tenant isolation.
+        Automatically scopes get_queryset() to request.user.tenant_id for non-SuperAdmins.
+        Automatically assigns request.user.tenant to created objects if applicable.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this expense category.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/properties/:
+    get:
+      operationId: v1_properties_list
+      description: |-
+        Reusable ViewSet enforcing tenant-level multi-tenant isolation.
+        Automatically scopes get_queryset() to request.user.tenant_id for non-SuperAdmins.
+        Automatically assigns request.user.tenant to created objects if applicable.
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedPropertyList'
+          description: ''
+    post:
+      operationId: v1_properties_create
+      description: |-
+        Reusable ViewSet enforcing tenant-level multi-tenant isolation.
+        Automatically scopes get_queryset() to request.user.tenant_id for non-SuperAdmins.
+        Automatically assigns request.user.tenant to created objects if applicable.
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PropertyRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PropertyRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PropertyRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Property'
+          description: ''
+  /api/v1/properties/{id}/:
+    get:
+      operationId: v1_properties_retrieve
+      description: |-
+        Reusable ViewSet enforcing tenant-level multi-tenant isolation.
+        Automatically scopes get_queryset() to request.user.tenant_id for non-SuperAdmins.
+        Automatically assigns request.user.tenant to created objects if applicable.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this property.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Property'
+          description: ''
+    put:
+      operationId: v1_properties_update
+      description: |-
+        Reusable ViewSet enforcing tenant-level multi-tenant isolation.
+        Automatically scopes get_queryset() to request.user.tenant_id for non-SuperAdmins.
+        Automatically assigns request.user.tenant to created objects if applicable.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this property.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PropertyRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PropertyRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PropertyRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Property'
+          description: ''
+    patch:
+      operationId: v1_properties_partial_update
+      description: |-
+        Reusable ViewSet enforcing tenant-level multi-tenant isolation.
+        Automatically scopes get_queryset() to request.user.tenant_id for non-SuperAdmins.
+        Automatically assigns request.user.tenant to created objects if applicable.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this property.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedPropertyRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedPropertyRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedPropertyRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Property'
+          description: ''
+    delete:
+      operationId: v1_properties_destroy
+      description: |-
+        Reusable ViewSet enforcing tenant-level multi-tenant isolation.
+        Automatically scopes get_queryset() to request.user.tenant_id for non-SuperAdmins.
+        Automatically assigns request.user.tenant to created objects if applicable.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this property.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/reports/financial/:
+    get:
+      operationId: v1_reports_financial_retrieve
+      parameters:
+      - in: query
+        name: end_date
+        schema:
+          type: string
+          format: date
+          nullable: true
+      - in: query
+        name: property_id
+        schema:
+          type: integer
+          nullable: true
+      - in: query
+        name: start_date
+        schema:
+          type: string
+          format: date
+          nullable: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FinancialReportResponse'
+          description: ''
+  /api/v1/reports/occupancy/:
+    get:
+      operationId: v1_reports_occupancy_retrieve
+      parameters:
+      - in: query
+        name: end_date
+        schema:
+          type: string
+          format: date
+          nullable: true
+      - in: query
+        name: property_id
+        schema:
+          type: integer
+          nullable: true
+      - in: query
+        name: start_date
+        schema:
+          type: string
+          format: date
+          nullable: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OccupancyReportResponse'
+          description: ''
+  /api/v1/rooms/:
+    get:
+      operationId: v1_rooms_list
+      description: |-
+        Reusable ViewSet enforcing tenant-level multi-tenant isolation.
+        Automatically scopes get_queryset() to request.user.tenant_id for non-SuperAdmins.
+        Automatically assigns request.user.tenant to created objects if applicable.
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedRoomList'
+          description: ''
+    post:
+      operationId: v1_rooms_create
+      description: |-
+        Reusable ViewSet enforcing tenant-level multi-tenant isolation.
+        Automatically scopes get_queryset() to request.user.tenant_id for non-SuperAdmins.
+        Automatically assigns request.user.tenant to created objects if applicable.
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RoomRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RoomRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RoomRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Room'
+          description: ''
+  /api/v1/rooms/{id}/:
+    get:
+      operationId: v1_rooms_retrieve
+      description: |-
+        Reusable ViewSet enforcing tenant-level multi-tenant isolation.
+        Automatically scopes get_queryset() to request.user.tenant_id for non-SuperAdmins.
+        Automatically assigns request.user.tenant to created objects if applicable.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this room.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Room'
+          description: ''
+    put:
+      operationId: v1_rooms_update
+      description: |-
+        Reusable ViewSet enforcing tenant-level multi-tenant isolation.
+        Automatically scopes get_queryset() to request.user.tenant_id for non-SuperAdmins.
+        Automatically assigns request.user.tenant to created objects if applicable.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this room.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RoomRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RoomRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RoomRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Room'
+          description: ''
+    patch:
+      operationId: v1_rooms_partial_update
+      description: |-
+        Reusable ViewSet enforcing tenant-level multi-tenant isolation.
+        Automatically scopes get_queryset() to request.user.tenant_id for non-SuperAdmins.
+        Automatically assigns request.user.tenant to created objects if applicable.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this room.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedRoomRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedRoomRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedRoomRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Room'
+          description: ''
+    delete:
+      operationId: v1_rooms_destroy
+      description: |-
+        Reusable ViewSet enforcing tenant-level multi-tenant isolation.
+        Automatically scopes get_queryset() to request.user.tenant_id for non-SuperAdmins.
+        Automatically assigns request.user.tenant to created objects if applicable.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this room.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/rooms/types/:
+    get:
+      operationId: v1_rooms_types_list
+      description: |-
+        Reusable ViewSet enforcing tenant-level multi-tenant isolation.
+        Automatically scopes get_queryset() to request.user.tenant_id for non-SuperAdmins.
+        Automatically assigns request.user.tenant to created objects if applicable.
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedRoomTypeList'
+          description: ''
+    post:
+      operationId: v1_rooms_types_create
+      description: |-
+        Reusable ViewSet enforcing tenant-level multi-tenant isolation.
+        Automatically scopes get_queryset() to request.user.tenant_id for non-SuperAdmins.
+        Automatically assigns request.user.tenant to created objects if applicable.
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RoomTypeRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RoomTypeRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RoomTypeRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoomType'
+          description: ''
+  /api/v1/rooms/types/{id}/:
+    get:
+      operationId: v1_rooms_types_retrieve
+      description: |-
+        Reusable ViewSet enforcing tenant-level multi-tenant isolation.
+        Automatically scopes get_queryset() to request.user.tenant_id for non-SuperAdmins.
+        Automatically assigns request.user.tenant to created objects if applicable.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this room type.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoomType'
+          description: ''
+    put:
+      operationId: v1_rooms_types_update
+      description: |-
+        Reusable ViewSet enforcing tenant-level multi-tenant isolation.
+        Automatically scopes get_queryset() to request.user.tenant_id for non-SuperAdmins.
+        Automatically assigns request.user.tenant to created objects if applicable.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this room type.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RoomTypeRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RoomTypeRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RoomTypeRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoomType'
+          description: ''
+    patch:
+      operationId: v1_rooms_types_partial_update
+      description: |-
+        Reusable ViewSet enforcing tenant-level multi-tenant isolation.
+        Automatically scopes get_queryset() to request.user.tenant_id for non-SuperAdmins.
+        Automatically assigns request.user.tenant to created objects if applicable.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this room type.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedRoomTypeRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedRoomTypeRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedRoomTypeRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoomType'
+          description: ''
+    delete:
+      operationId: v1_rooms_types_destroy
+      description: |-
+        Reusable ViewSet enforcing tenant-level multi-tenant isolation.
+        Automatically scopes get_queryset() to request.user.tenant_id for non-SuperAdmins.
+        Automatically assigns request.user.tenant to created objects if applicable.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this room type.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/staff/:
+    get:
+      operationId: v1_staff_list
+      description: |-
+        Reusable ViewSet enforcing tenant-level multi-tenant isolation.
+        Automatically scopes get_queryset() to request.user.tenant_id for non-SuperAdmins.
+        Automatically assigns request.user.tenant to created objects if applicable.
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedStaffProfileList'
+          description: ''
+    post:
+      operationId: v1_staff_create
+      description: |-
+        Reusable ViewSet enforcing tenant-level multi-tenant isolation.
+        Automatically scopes get_queryset() to request.user.tenant_id for non-SuperAdmins.
+        Automatically assigns request.user.tenant to created objects if applicable.
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StaffProfileRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/StaffProfileRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/StaffProfileRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StaffProfile'
+          description: ''
+  /api/v1/staff/{id}/:
+    get:
+      operationId: v1_staff_retrieve
+      description: |-
+        Reusable ViewSet enforcing tenant-level multi-tenant isolation.
+        Automatically scopes get_queryset() to request.user.tenant_id for non-SuperAdmins.
+        Automatically assigns request.user.tenant to created objects if applicable.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this staff profile.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StaffProfile'
+          description: ''
+    put:
+      operationId: v1_staff_update
+      description: |-
+        Reusable ViewSet enforcing tenant-level multi-tenant isolation.
+        Automatically scopes get_queryset() to request.user.tenant_id for non-SuperAdmins.
+        Automatically assigns request.user.tenant to created objects if applicable.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this staff profile.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StaffProfileRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/StaffProfileRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/StaffProfileRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StaffProfile'
+          description: ''
+    patch:
+      operationId: v1_staff_partial_update
+      description: |-
+        Reusable ViewSet enforcing tenant-level multi-tenant isolation.
+        Automatically scopes get_queryset() to request.user.tenant_id for non-SuperAdmins.
+        Automatically assigns request.user.tenant to created objects if applicable.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this staff profile.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedStaffProfileRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedStaffProfileRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedStaffProfileRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StaffProfile'
+          description: ''
+    delete:
+      operationId: v1_staff_destroy
+      description: |-
+        Reusable ViewSet enforcing tenant-level multi-tenant isolation.
+        Automatically scopes get_queryset() to request.user.tenant_id for non-SuperAdmins.
+        Automatically assigns request.user.tenant to created objects if applicable.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this staff profile.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/tenants/:
+    get:
+      operationId: v1_tenants_list
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedTenantList'
+          description: ''
+    post:
+      operationId: v1_tenants_create
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TenantRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TenantRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TenantRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tenant'
+          description: ''
+  /api/v1/tenants/{id}/:
+    get:
+      operationId: v1_tenants_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this tenant.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tenant'
+          description: ''
+    put:
+      operationId: v1_tenants_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this tenant.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TenantRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TenantRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TenantRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tenant'
+          description: ''
+    patch:
+      operationId: v1_tenants_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this tenant.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedTenantRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedTenantRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedTenantRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tenant'
+          description: ''
+    delete:
+      operationId: v1_tenants_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this tenant.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/users/:
+    get:
+      operationId: v1_users_list
+      description: |-
+        Reusable ViewSet enforcing tenant-level multi-tenant isolation.
+        Automatically scopes get_queryset() to request.user.tenant_id for non-SuperAdmins.
+        Automatically assigns request.user.tenant to created objects if applicable.
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedUserList'
+          description: ''
+    post:
+      operationId: v1_users_create
+      description: |-
+        Reusable ViewSet enforcing tenant-level multi-tenant isolation.
+        Automatically scopes get_queryset() to request.user.tenant_id for non-SuperAdmins.
+        Automatically assigns request.user.tenant to created objects if applicable.
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserCreateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UserCreateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UserCreateRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserCreate'
+          description: ''
+  /api/v1/users/{id}/:
+    get:
+      operationId: v1_users_retrieve
+      description: |-
+        Reusable ViewSet enforcing tenant-level multi-tenant isolation.
+        Automatically scopes get_queryset() to request.user.tenant_id for non-SuperAdmins.
+        Automatically assigns request.user.tenant to created objects if applicable.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this user.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+    put:
+      operationId: v1_users_update
+      description: |-
+        Reusable ViewSet enforcing tenant-level multi-tenant isolation.
+        Automatically scopes get_queryset() to request.user.tenant_id for non-SuperAdmins.
+        Automatically assigns request.user.tenant to created objects if applicable.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this user.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UserRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UserRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+    patch:
+      operationId: v1_users_partial_update
+      description: |-
+        Reusable ViewSet enforcing tenant-level multi-tenant isolation.
+        Automatically scopes get_queryset() to request.user.tenant_id for non-SuperAdmins.
+        Automatically assigns request.user.tenant to created objects if applicable.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this user.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedUserRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedUserRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedUserRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+    delete:
+      operationId: v1_users_destroy
+      description: |-
+        Reusable ViewSet enforcing tenant-level multi-tenant isolation.
+        Automatically scopes get_queryset() to request.user.tenant_id for non-SuperAdmins.
+        Automatically assigns request.user.tenant to created objects if applicable.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this user.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/users/me/:
+    get:
+      operationId: v1_users_me_retrieve
+      description: |-
+        Reusable ViewSet enforcing tenant-level multi-tenant isolation.
+        Automatically scopes get_queryset() to request.user.tenant_id for non-SuperAdmins.
+        Automatically assigns request.user.tenant to created objects if applicable.
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+    put:
+      operationId: v1_users_me_update
+      description: |-
+        Reusable ViewSet enforcing tenant-level multi-tenant isolation.
+        Automatically scopes get_queryset() to request.user.tenant_id for non-SuperAdmins.
+        Automatically assigns request.user.tenant to created objects if applicable.
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UserRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UserRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+    patch:
+      operationId: v1_users_me_partial_update
+      description: |-
+        Reusable ViewSet enforcing tenant-level multi-tenant isolation.
+        Automatically scopes get_queryset() to request.user.tenant_id for non-SuperAdmins.
+        Automatically assigns request.user.tenant to created objects if applicable.
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedUserRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedUserRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedUserRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+  /api/v1/users/token/:
+    post:
+      operationId: v1_users_token_create
+      description: |-
+        Takes a set of user credentials and returns an access and refresh JSON web
+        token pair to prove the authentication of those credentials.
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CustomTokenObtainPairRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CustomTokenObtainPairRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CustomTokenObtainPairRequest'
+        required: true
+      responses:
+        '200':
+          description: No response body
+  /api/v1/users/token/refresh/:
+    post:
+      operationId: v1_users_token_refresh_create
+      description: |-
+        Takes a refresh type JSON web token and returns an access type JSON web
+        token if the refresh token is valid.
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenRefreshRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenRefreshRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenRefreshRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenRefresh'
+          description: ''
+components:
+  schemas:
+    Booking:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        tenant:
+          type: integer
+          readOnly: true
+        property:
+          type: integer
+          readOnly: true
+        room:
+          type: integer
+        room_details:
+          allOf:
+          - $ref: '#/components/schemas/Room'
+          readOnly: true
+        guest_name:
+          type: string
+          maxLength: 255
+        guest_email:
+          nullable: true
+          oneOf:
+          - type: string
+            format: email
+            maxLength: 254
+          - type: string
+            maxLength: 0
+        guest_phone:
+          type: string
+          maxLength: 50
+        check_in_date:
+          type: string
+          format: date
+        check_out_date:
+          type: string
+          format: date
+        total_nights:
+          type: integer
+          readOnly: true
+        nightly_rate:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        total_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          readOnly: true
+        paid_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+        payment_status:
+          allOf:
+          - $ref: '#/components/schemas/PaymentStatusEnum'
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/BookingStatusEnum'
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - check_in_date
+      - check_out_date
+      - created_at
+      - guest_name
+      - guest_phone
+      - id
+      - nightly_rate
+      - payment_status
+      - property
+      - room
+      - room_details
+      - status
+      - tenant
+      - total_amount
+      - total_nights
+      - updated_at
+    BookingRequest:
+      type: object
+      properties:
+        room:
+          type: integer
+        guest_name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        guest_email:
+          nullable: true
+          oneOf:
+          - type: string
+            format: email
+            maxLength: 254
+          - type: string
+            maxLength: 0
+        guest_phone:
+          type: string
+          minLength: 1
+          maxLength: 50
+        check_in_date:
+          type: string
+          format: date
+        check_out_date:
+          type: string
+          format: date
+        nightly_rate:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        paid_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+      required:
+      - check_in_date
+      - check_out_date
+      - guest_name
+      - guest_phone
+      - nightly_rate
+      - room
+    BookingStatusEnum:
+      enum:
+      - PENDING
+      - CONFIRMED
+      - CHECKED_IN
+      - CHECKED_OUT
+      - CANCELLED
+      type: string
+      description: |-
+        * `PENDING` - Pending
+        * `CONFIRMED` - Confirmed
+        * `CHECKED_IN` - Checked In
+        * `CHECKED_OUT` - Checked Out
+        * `CANCELLED` - Cancelled
+    CustomTokenObtainPairRequest:
+      type: object
+      properties:
+        username:
+          type: string
+          writeOnly: true
+          minLength: 1
+        password:
+          type: string
+          writeOnly: true
+          minLength: 1
+      required:
+      - password
+      - username
+    Expense:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        tenant:
+          type: integer
+          readOnly: true
+        property:
+          type: integer
+        category:
+          type: integer
+        category_details:
+          allOf:
+          - $ref: '#/components/schemas/ExpenseCategory'
+          readOnly: true
+        item_name:
+          type: string
+          maxLength: 255
+        vendor_name:
+          type: string
+          nullable: true
+          maxLength: 255
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+        expense_date:
+          type: string
+          format: date
+        description:
+          type: string
+          nullable: true
+        created_by:
+          type: integer
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - amount
+      - category
+      - category_details
+      - created_at
+      - created_by
+      - expense_date
+      - id
+      - item_name
+      - property
+      - tenant
+      - updated_at
+    ExpenseCategory:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        tenant:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 100
+      required:
+      - id
+      - name
+      - tenant
+    ExpenseCategoryRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+      required:
+      - name
+    ExpenseRequest:
+      type: object
+      properties:
+        property:
+          type: integer
+        category:
+          type: integer
+        item_name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        vendor_name:
+          type: string
+          nullable: true
+          maxLength: 255
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+        expense_date:
+          type: string
+          format: date
+        description:
+          type: string
+          nullable: true
+      required:
+      - amount
+      - category
+      - expense_date
+      - item_name
+      - property
+    FinancialReportResponse:
+      type: object
+      properties:
+        period_start:
+          type: string
+          format: date
+        period_end:
+          type: string
+          format: date
+        period_days:
+          type: integer
+        total_booked_revenue:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        total_collected_revenue:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        raw_operational_expenses:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        staff_payroll_expense:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        property_rent_expense:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        total_expenses:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        net_profit:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+      required:
+      - net_profit
+      - period_days
+      - period_end
+      - period_start
+      - property_rent_expense
+      - raw_operational_expenses
+      - staff_payroll_expense
+      - total_booked_revenue
+      - total_collected_revenue
+      - total_expenses
+    OccupancyReportResponse:
+      type: object
+      properties:
+        period_start:
+          type: string
+          format: date
+        period_end:
+          type: string
+          format: date
+        total_rooms:
+          type: integer
+        total_available_room_nights:
+          type: integer
+        occupied_room_nights:
+          type: integer
+        occupancy_rate_percentage:
+          type: number
+          format: double
+      required:
+      - occupancy_rate_percentage
+      - occupied_room_nights
+      - period_end
+      - period_start
+      - total_available_room_nights
+      - total_rooms
+    PaginatedBookingList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Booking'
+    PaginatedExpenseCategoryList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ExpenseCategory'
+    PaginatedExpenseList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Expense'
+    PaginatedPropertyList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Property'
+    PaginatedRoomList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Room'
+    PaginatedRoomTypeList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/RoomType'
+    PaginatedStaffProfileList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/StaffProfile'
+    PaginatedTenantList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Tenant'
+    PaginatedUserList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/User'
+    PatchedBookingRequest:
+      type: object
+      properties:
+        room:
+          type: integer
+        guest_name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        guest_email:
+          nullable: true
+          oneOf:
+          - type: string
+            format: email
+            maxLength: 254
+          - type: string
+            maxLength: 0
+        guest_phone:
+          type: string
+          minLength: 1
+          maxLength: 50
+        check_in_date:
+          type: string
+          format: date
+        check_out_date:
+          type: string
+          format: date
+        nightly_rate:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        paid_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+    PatchedExpenseCategoryRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+    PatchedExpenseRequest:
+      type: object
+      properties:
+        property:
+          type: integer
+        category:
+          type: integer
+        item_name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        vendor_name:
+          type: string
+          nullable: true
+          maxLength: 255
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+        expense_date:
+          type: string
+          format: date
+        description:
+          type: string
+          nullable: true
+    PatchedPropertyRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        address:
+          type: string
+          minLength: 1
+        city:
+          type: string
+          minLength: 1
+          maxLength: 100
+        country:
+          type: string
+          minLength: 1
+          maxLength: 100
+        phone:
+          type: string
+          nullable: true
+          maxLength: 50
+        email:
+          nullable: true
+          oneOf:
+          - type: string
+            format: email
+            maxLength: 254
+          - type: string
+            maxLength: 0
+        monthly_rent:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+        status:
+          $ref: '#/components/schemas/PropertyStatusEnum'
+    PatchedRoomRequest:
+      type: object
+      properties:
+        property:
+          type: integer
+        room_type:
+          type: integer
+        room_number:
+          type: string
+          minLength: 1
+          maxLength: 50
+        floor:
+          type: string
+          nullable: true
+          maxLength: 50
+        status:
+          $ref: '#/components/schemas/RoomStatusEnum'
+    PatchedRoomTypeRequest:
+      type: object
+      properties:
+        property:
+          type: integer
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        base_price_per_night:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        max_occupancy:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        description:
+          type: string
+          nullable: true
+    PatchedStaffProfileRequest:
+      type: object
+      properties:
+        property:
+          type: integer
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        phone:
+          type: string
+          nullable: true
+          maxLength: 50
+        email:
+          nullable: true
+          oneOf:
+          - type: string
+            format: email
+            maxLength: 254
+          - type: string
+            maxLength: 0
+        user:
+          type: integer
+          nullable: true
+        department:
+          type: string
+          minLength: 1
+          maxLength: 100
+        position:
+          type: string
+          minLength: 1
+          maxLength: 100
+        monthly_salary:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+        hired_date:
+          type: string
+          format: date
+        is_active:
+          type: boolean
+    PatchedTenantRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        slug:
+          type: string
+          minLength: 1
+          maxLength: 100
+          pattern: ^[-a-zA-Z0-9_]+$
+        subscription_plan:
+          $ref: '#/components/schemas/SubscriptionPlanEnum'
+        is_active:
+          type: boolean
+        contact_email:
+          type: string
+          format: email
+          minLength: 1
+          maxLength: 254
+        contact_phone:
+          type: string
+          nullable: true
+          maxLength: 50
+    PatchedUserRequest:
+      type: object
+      properties:
+        username:
+          type: string
+          minLength: 1
+          description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
+            only.
+          pattern: ^[\w.@+-]+$
+          maxLength: 150
+        email:
+          title: Email address
+          oneOf:
+          - type: string
+            format: email
+            maxLength: 254
+          - type: string
+            maxLength: 0
+        first_name:
+          type: string
+          maxLength: 150
+        last_name:
+          type: string
+          maxLength: 150
+        role:
+          $ref: '#/components/schemas/RoleEnum'
+        tenant:
+          type: integer
+          nullable: true
+        phone_number:
+          type: string
+          nullable: true
+          maxLength: 50
+        is_active:
+          type: boolean
+          title: Active
+          description: Designates whether this user should be treated as active. Unselect
+            this instead of deleting accounts.
+    PaymentStatusEnum:
+      enum:
+      - UNPAID
+      - PARTIAL
+      - PAID
+      type: string
+      description: |-
+        * `UNPAID` - Unpaid
+        * `PARTIAL` - Partial
+        * `PAID` - Paid
+    Property:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        tenant:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 255
+        address:
+          type: string
+        city:
+          type: string
+          maxLength: 100
+        country:
+          type: string
+          maxLength: 100
+        phone:
+          type: string
+          nullable: true
+          maxLength: 50
+        email:
+          nullable: true
+          oneOf:
+          - type: string
+            format: email
+            maxLength: 254
+          - type: string
+            maxLength: 0
+        monthly_rent:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+        status:
+          $ref: '#/components/schemas/PropertyStatusEnum'
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - address
+      - city
+      - created_at
+      - id
+      - name
+      - tenant
+      - updated_at
+    PropertyRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        address:
+          type: string
+          minLength: 1
+        city:
+          type: string
+          minLength: 1
+          maxLength: 100
+        country:
+          type: string
+          minLength: 1
+          maxLength: 100
+        phone:
+          type: string
+          nullable: true
+          maxLength: 50
+        email:
+          nullable: true
+          oneOf:
+          - type: string
+            format: email
+            maxLength: 254
+          - type: string
+            maxLength: 0
+        monthly_rent:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+        status:
+          $ref: '#/components/schemas/PropertyStatusEnum'
+      required:
+      - address
+      - city
+      - name
+    PropertyStatusEnum:
+      enum:
+      - ACTIVE
+      - MAINTENANCE
+      - INACTIVE
+      type: string
+      description: |-
+        * `ACTIVE` - Active
+        * `MAINTENANCE` - Maintenance
+        * `INACTIVE` - Inactive
+    RoleEnum:
+      enum:
+      - SUPERADMIN
+      - TENANT_ADMIN
+      - PROPERTY_MANAGER
+      - STAFF
+      - GUEST
+      type: string
+      description: |-
+        * `SUPERADMIN` - Super Admin
+        * `TENANT_ADMIN` - Tenant Admin
+        * `PROPERTY_MANAGER` - Property Manager
+        * `STAFF` - Staff
+        * `GUEST` - Guest
+    Room:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        tenant:
+          type: integer
+          readOnly: true
+        property:
+          type: integer
+        room_type:
+          type: integer
+        room_type_details:
+          allOf:
+          - $ref: '#/components/schemas/RoomType'
+          readOnly: true
+        room_number:
+          type: string
+          maxLength: 50
+        floor:
+          type: string
+          nullable: true
+          maxLength: 50
+        status:
+          $ref: '#/components/schemas/RoomStatusEnum'
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - id
+      - property
+      - room_number
+      - room_type
+      - room_type_details
+      - tenant
+      - updated_at
+    RoomRequest:
+      type: object
+      properties:
+        property:
+          type: integer
+        room_type:
+          type: integer
+        room_number:
+          type: string
+          minLength: 1
+          maxLength: 50
+        floor:
+          type: string
+          nullable: true
+          maxLength: 50
+        status:
+          $ref: '#/components/schemas/RoomStatusEnum'
+      required:
+      - property
+      - room_number
+      - room_type
+    RoomStatusEnum:
+      enum:
+      - AVAILABLE
+      - OCCUPIED
+      - MAINTENANCE
+      - CLEANING
+      type: string
+      description: |-
+        * `AVAILABLE` - Available
+        * `OCCUPIED` - Occupied
+        * `MAINTENANCE` - Maintenance
+        * `CLEANING` - Cleaning
+    RoomType:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        tenant:
+          type: integer
+          readOnly: true
+        property:
+          type: integer
+        name:
+          type: string
+          maxLength: 100
+        base_price_per_night:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        max_occupancy:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        description:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - base_price_per_night
+      - created_at
+      - id
+      - name
+      - property
+      - tenant
+    RoomTypeRequest:
+      type: object
+      properties:
+        property:
+          type: integer
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        base_price_per_night:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        max_occupancy:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        description:
+          type: string
+          nullable: true
+      required:
+      - base_price_per_night
+      - name
+      - property
+    StaffProfile:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        tenant:
+          type: integer
+          readOnly: true
+        property:
+          type: integer
+        name:
+          type: string
+          maxLength: 255
+        phone:
+          type: string
+          nullable: true
+          maxLength: 50
+        email:
+          nullable: true
+          oneOf:
+          - type: string
+            format: email
+            maxLength: 254
+          - type: string
+            maxLength: 0
+        user:
+          type: integer
+          nullable: true
+        department:
+          type: string
+          maxLength: 100
+        position:
+          type: string
+          maxLength: 100
+        monthly_salary:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+        hired_date:
+          type: string
+          format: date
+        is_active:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - department
+      - hired_date
+      - id
+      - name
+      - position
+      - property
+      - tenant
+      - updated_at
+    StaffProfileRequest:
+      type: object
+      properties:
+        property:
+          type: integer
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        phone:
+          type: string
+          nullable: true
+          maxLength: 50
+        email:
+          nullable: true
+          oneOf:
+          - type: string
+            format: email
+            maxLength: 254
+          - type: string
+            maxLength: 0
+        user:
+          type: integer
+          nullable: true
+        department:
+          type: string
+          minLength: 1
+          maxLength: 100
+        position:
+          type: string
+          minLength: 1
+          maxLength: 100
+        monthly_salary:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+        hired_date:
+          type: string
+          format: date
+        is_active:
+          type: boolean
+      required:
+      - department
+      - hired_date
+      - name
+      - position
+      - property
+    SubscriptionPlanEnum:
+      enum:
+      - BASIC
+      - STANDARD
+      - PREMIUM
+      type: string
+      description: |-
+        * `BASIC` - Basic
+        * `STANDARD` - Standard
+        * `PREMIUM` - Premium
+    Tenant:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 255
+        slug:
+          type: string
+          maxLength: 100
+          pattern: ^[-a-zA-Z0-9_]+$
+        subscription_plan:
+          $ref: '#/components/schemas/SubscriptionPlanEnum'
+        is_active:
+          type: boolean
+        contact_email:
+          type: string
+          format: email
+          maxLength: 254
+        contact_phone:
+          type: string
+          nullable: true
+          maxLength: 50
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - contact_email
+      - created_at
+      - id
+      - name
+      - slug
+      - updated_at
+    TenantRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        slug:
+          type: string
+          minLength: 1
+          maxLength: 100
+          pattern: ^[-a-zA-Z0-9_]+$
+        subscription_plan:
+          $ref: '#/components/schemas/SubscriptionPlanEnum'
+        is_active:
+          type: boolean
+        contact_email:
+          type: string
+          format: email
+          minLength: 1
+          maxLength: 254
+        contact_phone:
+          type: string
+          nullable: true
+          maxLength: 50
+      required:
+      - contact_email
+      - name
+      - slug
+    TokenRefresh:
+      type: object
+      properties:
+        access:
+          type: string
+          readOnly: true
+        refresh:
+          type: string
+      required:
+      - access
+      - refresh
+    TokenRefreshRequest:
+      type: object
+      properties:
+        refresh:
+          type: string
+          minLength: 1
+      required:
+      - refresh
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        username:
+          type: string
+          description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
+            only.
+          pattern: ^[\w.@+-]+$
+          maxLength: 150
+        email:
+          title: Email address
+          oneOf:
+          - type: string
+            format: email
+            maxLength: 254
+          - type: string
+            maxLength: 0
+        first_name:
+          type: string
+          maxLength: 150
+        last_name:
+          type: string
+          maxLength: 150
+        role:
+          $ref: '#/components/schemas/RoleEnum'
+        tenant:
+          type: integer
+          nullable: true
+        tenant_details:
+          allOf:
+          - $ref: '#/components/schemas/Tenant'
+          readOnly: true
+        phone_number:
+          type: string
+          nullable: true
+          maxLength: 50
+        is_active:
+          type: boolean
+          title: Active
+          description: Designates whether this user should be treated as active. Unselect
+            this instead of deleting accounts.
+        date_joined:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - date_joined
+      - id
+      - tenant_details
+      - username
+    UserCreate:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        username:
+          type: string
+          description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
+            only.
+          pattern: ^[\w.@+-]+$
+          maxLength: 150
+        email:
+          title: Email address
+          oneOf:
+          - type: string
+            format: email
+            maxLength: 254
+          - type: string
+            maxLength: 0
+        first_name:
+          type: string
+          maxLength: 150
+        last_name:
+          type: string
+          maxLength: 150
+        role:
+          $ref: '#/components/schemas/RoleEnum'
+        tenant:
+          type: integer
+          nullable: true
+        phone_number:
+          type: string
+          nullable: true
+          maxLength: 50
+      required:
+      - id
+      - username
+    UserCreateRequest:
+      type: object
+      properties:
+        username:
+          type: string
+          minLength: 1
+          description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
+            only.
+          pattern: ^[\w.@+-]+$
+          maxLength: 150
+        email:
+          title: Email address
+          oneOf:
+          - type: string
+            format: email
+            maxLength: 254
+          - type: string
+            maxLength: 0
+        password:
+          type: string
+          writeOnly: true
+          minLength: 1
+        first_name:
+          type: string
+          maxLength: 150
+        last_name:
+          type: string
+          maxLength: 150
+        role:
+          $ref: '#/components/schemas/RoleEnum'
+        tenant:
+          type: integer
+          nullable: true
+        phone_number:
+          type: string
+          nullable: true
+          maxLength: 50
+      required:
+      - password
+      - username
+    UserRequest:
+      type: object
+      properties:
+        username:
+          type: string
+          minLength: 1
+          description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
+            only.
+          pattern: ^[\w.@+-]+$
+          maxLength: 150
+        email:
+          title: Email address
+          oneOf:
+          - type: string
+            format: email
+            maxLength: 254
+          - type: string
+            maxLength: 0
+        first_name:
+          type: string
+          maxLength: 150
+        last_name:
+          type: string
+          maxLength: 150
+        role:
+          $ref: '#/components/schemas/RoleEnum'
+        tenant:
+          type: integer
+          nullable: true
+        phone_number:
+          type: string
+          nullable: true
+          maxLength: 50
+        is_active:
+          type: boolean
+          title: Active
+          description: Designates whether this user should be treated as active. Unselect
+            this instead of deleting accounts.
+      required:
+      - username
+  securitySchemes:
+    jwtAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
