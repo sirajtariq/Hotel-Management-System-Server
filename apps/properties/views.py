@@ -1,31 +1,56 @@
-from django.db.models import Count
+from django.db.models import Count, Q
 from rest_framework import status
+from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from core.viewsets import TenantScopedViewSet
 from apps.properties.models import Property
-from apps.properties.serializers import PropertySerializer
+from apps.properties.serializers import (
+    PropertyListSerializer,
+    PropertyDetailSerializer,
+    PropertySelectorSerializer,
+)
 from apps.properties.services.property_service import PropertyService
 from core.permissions import HasTenantAccess, HasModulePermission
 
 class PropertyViewSet(TenantScopedViewSet):
     queryset = Property.objects.all()
-    serializer_class = PropertySerializer
+    serializer_class = PropertyDetailSerializer
     permission_classes = [IsAuthenticated, HasTenantAccess, HasModulePermission]
     action_permissions = {
         'list': 'properties:view',
         'retrieve': 'properties:view',
+        'dropdown_selector': 'properties:view',
         'create': 'properties:manage',
         'update': 'properties:manage',
         'partial_update': 'properties:manage',
         'destroy': 'properties:manage',
     }
 
-
     def get_queryset(self):
         qs = super().get_queryset()
-        return qs.select_related('tenant').annotate(total_rooms=Count('rooms', distinct=True))
+        if self.action == 'list':
+            return qs.annotate(
+                total_rooms=Count('rooms', distinct=True),
+                booked_rooms=Count('rooms', filter=Q(rooms__status__in=['OCCUPIED', 'RESERVED']), distinct=True),
+                cleaning_rooms=Count('rooms', filter=Q(rooms__status__in=['CLEANING', 'DIRTY', 'MAINTENANCE']), distinct=True),
+                available_rooms=Count('rooms', filter=Q(rooms__status='AVAILABLE'), distinct=True),
+            ).order_by('-created_at')
+        return qs.order_by('-created_at')
 
+    def get_serializer_class(self):
+        if self.action == 'list':
+            return PropertyListSerializer
+        elif self.action == 'dropdown_selector':
+            return PropertySelectorSerializer
+        return PropertyDetailSerializer
+
+    @action(detail=False, methods=['get'], url_path='selector')
+    def dropdown_selector(self, request):
+        """High-speed endpoint for booking/expense form dropdowns"""
+        qs = self.get_queryset().filter(status='ACTIVE').only('id', 'name', 'city')
+        serializer = PropertySelectorSerializer(qs, many=True)
+        return Response(serializer.data)
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
