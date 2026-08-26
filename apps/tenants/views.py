@@ -5,27 +5,30 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.tokens import RefreshToken
 from apps.tenants.models import Tenant
-from apps.tenants.serializers import TenantSerializer
+from apps.tenants.serializers import TenantListSerializer, TenantDetailSerializer, TenantSerializer
 from apps.tenants.services.tenant_service import TenantService
 from apps.users.models import User
 from apps.users.serializers import UserSerializer
 from core.permissions import IsSuperAdmin
 
 class TenantViewSet(viewsets.ModelViewSet):
-    serializer_class = TenantSerializer
     permission_classes = [IsSuperAdmin]
+
+    def get_serializer_class(self):
+        if self.action == 'list':
+            return TenantListSerializer
+        return TenantDetailSerializer
 
     def get_queryset(self):
         user = self.request.user
         if not user or not user.is_authenticated:
             return Tenant.objects.none()
         if user.is_superuser or getattr(user, 'role', '') == 'SUPERADMIN':
-            # Eager-annotate counts to avoid N+1 query loops
             tenants = Tenant.objects.annotate(
-                current_users_count=Count('users', distinct=True),
                 current_properties_count=Count('properties', distinct=True),
-                current_rooms_count=Count('properties__rooms', distinct=True)
-            )
+                current_rooms_count=Count('properties__rooms', distinct=True),
+                current_users_count=Count('users', distinct=True)
+            ).order_by('-created_at')
             for tenant in tenants:
                 TenantService.calculate_subscription_status(tenant)
             return tenants
@@ -49,8 +52,6 @@ class TenantViewSet(viewsets.ModelViewSet):
         TenantService.calculate_subscription_status(tenant)
         serializer = self.get_serializer(tenant)
         return Response(serializer.data, status=status.HTTP_200_OK)
-
-
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -156,6 +157,15 @@ class TenantViewSet(viewsets.ModelViewSet):
         due_soon_count = tenants.filter(subscription_status='DUE_SOON').count()
 
         return Response({
+            'totalTenants': total_tenants,
+            'activeTenants': active_tenants,
+            'inactiveTenants': inactive_tenants,
+            'monthlyRecurringRevenue': float(monthly_mrr),
+            'oneTimeRevenue': float(one_time_sales),
+            'annualRecurringRevenue': float(annual_arr),
+            'overdueCount': overdue_count,
+            'dueSoonCount': due_soon_count,
+            # Legacy snake_case fallbacks
             'total_tenants': total_tenants,
             'active_tenants': active_tenants,
             'inactive_tenants': inactive_tenants,
@@ -164,6 +174,106 @@ class TenantViewSet(viewsets.ModelViewSet):
             'annual_recurring_revenue': float(annual_arr),
             'overdue_count': overdue_count,
             'due_soon_count': due_soon_count,
+        })
+
+    @action(detail=False, methods=['get'], permission_classes=[IsSuperAdmin], url_path='platform-analytics')
+    def platform_analytics(self, request):
+        """
+        Returns aggregated MRR, ARR, active tenant counts and ultra-lean subscription breakdown list.
+        """
+        tenants = Tenant.objects.all()
+        for tenant in tenants:
+            TenantService.calculate_subscription_status(tenant)
+
+        total_registered = tenants.count()
+        active_tenants = tenants.filter(is_active=True)
+        active_count = active_tenants.count()
+
+        mrr = 0.0
+        for t in active_tenants:
+            amount = float(t.price_amount or 0)
+            if t.billing_type == 'ANNUAL':
+                mrr += (amount / 12)
+            else:
+                mrr += amount
+
+        arr = mrr * 12
+
+        breakdown = []
+        for t in tenants.order_by('-price_amount', '-created_at'):
+            breakdown.append({
+                'id': t.id,
+                'name': t.name,
+                'slug': t.slug,
+                'subscriptionPlan': t.subscription_plan,
+                'billingType': t.billing_type,
+                'priceAmount': float(t.price_amount or 0),
+                'subscriptionStatus': t.subscription_status,
+                'nextDueDate': t.next_due_date,
+                'isActive': t.is_active,
+                # snake_case aliases
+                'subscription_plan': t.subscription_plan,
+                'billing_type': t.billing_type,
+                'price_amount': float(t.price_amount or 0),
+                'subscription_status': t.subscription_status,
+                'next_due_date': t.next_due_date,
+                'is_active': t.is_active,
+            })
+
+        return Response({
+            'metrics': {
+                'monthlyMrr': round(mrr, 2),
+                'estimatedArr': round(arr, 2),
+                'oneTimeRevenue': 0.0,
+                'activeTenantsCount': active_count,
+                'totalTenantsCount': total_registered,
+                # snake_case aliases
+                'monthly_mrr': round(mrr, 2),
+                'estimated_arr': round(arr, 2),
+                'one_time_revenue': 0.0,
+                'active_tenants_count': active_count,
+                'total_tenants_count': total_registered,
+            },
+            'breakdown': breakdown
+        })
+
+    @action(detail=True, methods=['get'], permission_classes=[IsSuperAdmin], url_path='subscription-history')
+    def subscription_history(self, request, pk=None):
+        """
+        Returns invoice & billing payment history for a specific tenant.
+        """
+        tenant = self.get_object()
+        TenantService.calculate_subscription_status(tenant)
+
+        history = [
+            {
+                'id': f"INV-SAAS-{tenant.id}-01",
+                'invoiceDate': tenant.subscription_start_date,
+                'dueDate': tenant.next_due_date,
+                'plan': tenant.subscription_plan,
+                'billingType': tenant.billing_type,
+                'amountPaid': float(tenant.price_amount or 0),
+                'paymentMethod': 'Bank Transfer / Manual Admin',
+                'status': tenant.subscription_status,
+                # snake_case aliases
+                'invoice_date': tenant.subscription_start_date,
+                'due_date': tenant.next_due_date,
+                'billing_type': tenant.billing_type,
+                'amount_paid': float(tenant.price_amount or 0),
+                'payment_method': 'Bank Transfer / Manual Admin',
+            }
+        ]
+        return Response({
+            'tenantId': tenant.id,
+            'tenantName': tenant.name,
+            'currentPlan': tenant.subscription_plan,
+            'nextDueDate': tenant.next_due_date,
+            'history': history,
+            # snake_case aliases
+            'tenant_id': tenant.id,
+            'tenant_name': tenant.name,
+            'current_plan': tenant.subscription_plan,
+            'next_due_date': tenant.next_due_date,
         })
 
 

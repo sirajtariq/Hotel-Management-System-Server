@@ -24,6 +24,8 @@ class UserCustomRoleSerializer(serializers.ModelSerializer):
 
 class UserSerializer(serializers.ModelSerializer):
     tenant_details = TenantSerializer(source='tenant', read_only=True)
+    tenant_name = serializers.CharField(source='tenant.name', default='Global Platform', read_only=True)
+    full_name = serializers.SerializerMethodField()
     custom_role = UserCustomRoleSerializer(read_only=True)
     custom_role_details = RoleSerializer(source='custom_role', read_only=True)
     custom_role_id = serializers.PrimaryKeyRelatedField(
@@ -33,12 +35,134 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = [
-            'id', 'username', 'email', 'first_name', 'last_name',
+            'id', 'username', 'email', 'first_name', 'last_name', 'full_name',
             'role', 'custom_role', 'custom_role_id', 'custom_role_details',
-            'tenant', 'tenant_details', 'phone_number',
+            'tenant', 'tenant_name', 'tenant_details', 'phone_number',
             'is_active', 'date_joined'
         ]
         read_only_fields = ['id', 'date_joined']
+
+    def get_full_name(self, obj):
+        name = f"{obj.first_name or ''} {obj.last_name or ''}".strip()
+        return name if name else obj.username
+
+class SuperAdminUserListSerializer(serializers.ModelSerializer):
+    tenant_name = serializers.CharField(source='tenant.name', default='Global Platform', read_only=True)
+    full_name = serializers.SerializerMethodField()
+    assigned_properties_count = serializers.SerializerMethodField()
+
+    fullName = serializers.SerializerMethodField()
+    tenantName = serializers.CharField(source='tenant.name', default='Global Platform', read_only=True)
+    phoneNumber = serializers.CharField(source='phone_number', default='', read_only=True)
+    isActive = serializers.BooleanField(source='is_active', read_only=True)
+    dateJoined = serializers.DateTimeField(source='date_joined', read_only=True)
+    assignedPropertiesCount = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = [
+            'id',
+            'username',
+            'email',
+            'full_name',
+            'role',
+            'tenant_name',
+            'phone_number',
+            'is_active',
+            'date_joined',
+            'assigned_properties_count',
+            'fullName',
+            'tenantName',
+            'phoneNumber',
+            'isActive',
+            'dateJoined',
+            'assignedPropertiesCount',
+        ]
+
+    def get_full_name(self, obj):
+        name = f"{obj.first_name or ''} {obj.last_name or ''}".strip()
+        return name if name else obj.username
+
+    def get_fullName(self, obj):
+        return self.get_full_name(obj)
+
+    def get_assigned_properties_count(self, obj):
+        try:
+            if hasattr(obj, 'assigned_properties'):
+                return obj.assigned_properties.count()
+        except Exception:
+            pass
+        return 0
+
+    def get_assignedPropertiesCount(self, obj):
+        return self.get_assigned_properties_count(obj)
+
+
+class SuperAdminUserDetailSerializer(serializers.ModelSerializer):
+    tenant_details = serializers.SerializerMethodField()
+    assigned_properties_details = serializers.SerializerMethodField()
+    full_name = serializers.SerializerMethodField()
+
+    fullName = serializers.SerializerMethodField()
+    phoneNumber = serializers.CharField(source='phone_number', default='', read_only=True)
+    isActive = serializers.BooleanField(source='is_active', read_only=True)
+    dateJoined = serializers.DateTimeField(source='date_joined', read_only=True)
+    lastLogin = serializers.DateTimeField(source='last_login', read_only=True)
+    tenantDetails = serializers.SerializerMethodField()
+    assignedPropertiesDetails = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = [
+            'id',
+            'username',
+            'email',
+            'first_name',
+            'last_name',
+            'full_name',
+            'role',
+            'phone_number',
+            'is_active',
+            'is_superuser',
+            'tenant',
+            'tenant_details',
+            'assigned_properties_details',
+            'date_joined',
+            'last_login',
+            'fullName',
+            'phoneNumber',
+            'isActive',
+            'dateJoined',
+            'lastLogin',
+            'tenantDetails',
+            'assignedPropertiesDetails',
+        ]
+
+    def get_full_name(self, obj):
+        name = f"{obj.first_name or ''} {obj.last_name or ''}".strip()
+        return name if name else obj.username
+
+    def get_fullName(self, obj):
+        return self.get_full_name(obj)
+
+    def get_tenant_details(self, obj):
+        if obj.tenant:
+            return {'id': obj.tenant.id, 'name': obj.tenant.name, 'slug': obj.tenant.slug}
+        return None
+
+    def get_tenantDetails(self, obj):
+        return self.get_tenant_details(obj)
+
+    def get_assigned_properties_details(self, obj):
+        try:
+            if hasattr(obj, 'assigned_properties'):
+                return list(obj.assigned_properties.values('id', 'name', 'city'))
+        except Exception:
+            pass
+        return []
+
+    def get_assignedPropertiesDetails(self, obj):
+        return self.get_assigned_properties_details(obj)
 
 class UserCreateSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, required=True, style={'input_type': 'password'})

@@ -1,9 +1,14 @@
 from rest_framework import status
+from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from core.viewsets import TenantScopedViewSet
 from apps.rooms.models import Room, RoomType
-from apps.rooms.serializers import RoomSerializer, RoomTypeSerializer
+from apps.rooms.serializers import (
+    RoomSerializer,
+    RoomTypeSerializer,
+    AvailableRoomSelectorSerializer,
+)
 from apps.rooms.services.room_service import RoomService
 from core.permissions import HasTenantAccess, HasModulePermission
 
@@ -46,6 +51,7 @@ class RoomViewSet(TenantScopedViewSet):
     permission_classes = [IsAuthenticated, HasTenantAccess, HasModulePermission]
     action_permissions = {
         'list': 'rooms:view',
+        'available_rooms': 'rooms:view',
         'retrieve': 'rooms:view',
         'create': 'rooms:manage',
         'update': 'rooms:manage',
@@ -53,6 +59,17 @@ class RoomViewSet(TenantScopedViewSet):
         'destroy': 'rooms:manage',
         'change_status': 'rooms:change_status',
     }
+
+    @action(detail=False, methods=['get'], url_path='available')
+    def available_rooms(self, request):
+        property_id = request.query_params.get('property_id') or request.query_params.get('propertyId') or request.query_params.get('property')
+        qs = self.get_queryset().filter(status='AVAILABLE').select_related('room_type', 'property')
+
+        if property_id and property_id != 'ALL':
+            qs = qs.filter(property_id=property_id)
+
+        serializer = AvailableRoomSelectorSerializer(qs, many=True)
+        return Response(serializer.data)
 
 
     def get_queryset(self):

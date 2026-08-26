@@ -13,6 +13,8 @@ from apps.users.serializers import (
     ChangePasswordSerializer,
     AdminResetPasswordSerializer,
     RoleSerializer,
+    SuperAdminUserListSerializer,
+    SuperAdminUserDetailSerializer,
 )
 from apps.users.services.user_service import UserService
 from apps.users.services.role_service import RoleService
@@ -28,19 +30,22 @@ class UserViewSet(TenantScopedViewSet):
 
     def get_queryset(self):
         qs = super().get_queryset()
-        return qs.select_related('custom_role', 'tenant')
+        return qs.select_related('custom_role', 'tenant').prefetch_related('assigned_properties').order_by('-date_joined')
 
     def get_serializer_class(self):
-
         if self.action == 'create':
             return UserCreateSerializer
+        if self.action == 'list':
+            return SuperAdminUserListSerializer
+        if self.action == 'retrieve':
+            return SuperAdminUserDetailSerializer
         return UserSerializer
 
     def get_permissions(self):
         if self.action in ['create']:
             # Anyone can register or TenantAdmin creates user
             return [permissions.AllowAny()]
-        if self.action in ['me', 'change_password']:
+        if self.action in ['me', 'change_password', 'toggle_active', 'reset_password']:
             return [permissions.IsAuthenticated()]
         return [IsTenantAdmin()]
 
@@ -110,6 +115,14 @@ class UserViewSet(TenantScopedViewSet):
         Allows SuperAdmin or TenantAdmin to reset ANOTHER user's password via UserService.
         """
         target_user = self.get_object()
+        new_password = request.data.get('newPassword') or request.data.get('new_password')
+        if new_password:
+            if len(new_password) < 6:
+                return Response({'detail': 'Password must be at least 6 characters.'}, status=status.HTTP_400_BAD_REQUEST)
+            target_user.set_password(new_password)
+            target_user.save(update_fields=['password'])
+            return Response({'detail': f'Password for {target_user.username} successfully updated.'}, status=status.HTTP_200_OK)
+
         serializer = AdminResetPasswordSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
@@ -123,6 +136,22 @@ class UserViewSet(TenantScopedViewSet):
             {'detail': f'Password for user "{target_user.username}" reset successfully.'},
             status=status.HTTP_200_OK
         )
+
+    @action(detail=True, methods=['post'], permission_classes=[permissions.IsAuthenticated], url_path='toggle-active')
+    def toggle_active(self, request, pk=None):
+        """
+        Toggles user active state (Active <-> Disabled).
+        """
+        user = self.get_object()
+        if user.is_superuser and user == request.user:
+            return Response({'detail': 'You cannot deactivate your own superadmin account.'}, status=status.HTTP_400_BAD_REQUEST)
+        user.is_active = not user.is_active
+        user.save(update_fields=['is_active'])
+        return Response({
+            'isActive': user.is_active,
+            'is_active': user.is_active,
+            'detail': f"User status set to {'Active' if user.is_active else 'Disabled'}."
+        }, status=status.HTTP_200_OK)
 
 
 class RoleViewSet(TenantScopedViewSet):
