@@ -2,7 +2,8 @@ import csv
 import io
 from datetime import date, datetime, timedelta
 from decimal import Decimal
-from django.db.models import Sum, Q, F, Count, Avg
+from django.db.models import Sum, Q, F, Count, Avg, Value
+from django.db.models.functions import Coalesce
 from apps.bookings.models import Booking
 from apps.expenses.models import Expense, ExpenseCategory
 from apps.properties.models import Property
@@ -289,39 +290,41 @@ class FinancialReportingService:
             tenant_id=tenant_id,
             expense_date__gte=s_date,
             expense_date__lte=e_date
-        ).select_related('category', 'created_by')
+        ).select_related('account_head', 'category', 'created_by')
 
         if property_id:
             expense_query = expense_query.filter(property_id=property_id)
 
         total_expenses = expense_query.aggregate(total=Sum('amount'))['total'] or Decimal('0.0')
 
-        # Category Breakdown
-        categories = ExpenseCategory.objects.filter(tenant_id=tenant_id)
+        # Category / Account Head Breakdown
         categories_breakdown = []
-        for cat in categories:
-            cat_expenses = expense_query.filter(category=cat)
-            cat_amt = cat_expenses.aggregate(total=Sum('amount'))['total'] or Decimal('0.0')
+        head_groups = expense_query.values(
+            head_name=Coalesce('account_head__name', 'category__name', Value('General Expense'))
+        ).annotate(total_amt=Sum('amount')).order_by('-total_amt')
+
+        for group in head_groups:
+            cat_amt = group['total_amt'] or Decimal('0.0')
             if cat_amt > 0:
                 categories_breakdown.append({
-                    'category': cat.name,
+                    'category': group['head_name'],
                     'amount': float(round(cat_amt, 2)),
                     'percentage': float(round((cat_amt / total_expenses * Decimal('100.0')) if total_expenses > 0 else Decimal('0.0'), 1)),
                 })
 
         # Top 5 largest transactions
-        top_transactions = [
-            {
+        top_transactions = []
+        for exp in expense_query.order_by('-amount')[:5]:
+            head_name = exp.account_head.name if exp.account_head else (exp.category.name if exp.category else 'General Expense')
+            top_transactions.append({
                 'id': exp.id,
-                'item_name': exp.item_name,
+                'item_name': exp.item_name or head_name,
                 'vendor_name': exp.vendor_name or 'N/A',
-                'category': exp.category.name if exp.category else 'General',
+                'category': head_name,
                 'amount': float(exp.amount),
                 'expense_date': exp.expense_date.isoformat(),
-                'created_by': exp.created_by.get_full_name() if exp.created_by else 'Admin',
-            }
-            for exp in expense_query.order_by('-amount')[:5]
-        ]
+                'created_by': exp.created_by.get_full_name() if exp.created_by else 'Staff',
+            })
 
         # Daily Outflow
         daily_outflow = []
