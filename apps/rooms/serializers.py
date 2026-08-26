@@ -11,6 +11,13 @@ class RoomTypeSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ['id', 'tenant', 'created_at']
 
+    def to_internal_value(self, data):
+        if isinstance(data, dict):
+            data = data.copy()
+            if 'property_id' in data and 'property' not in data:
+                data['property'] = data['property_id']
+        return super().to_internal_value(data)
+
 class RoomSerializer(serializers.ModelSerializer):
     room_type_details = RoomTypeSerializer(source='room_type', read_only=True)
     room_type_name = serializers.SerializerMethodField()
@@ -30,6 +37,15 @@ class RoomSerializer(serializers.ModelSerializer):
             'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'tenant', 'created_at', 'updated_at']
+
+    def to_internal_value(self, data):
+        if isinstance(data, dict):
+            data = data.copy()
+            if 'property_id' in data and 'property' not in data:
+                data['property'] = data['property_id']
+            if 'room_type_id' in data and 'room_type' not in data:
+                data['room_type'] = data['room_type_id']
+        return super().to_internal_value(data)
 
     def get_room_type_name(self, obj) -> str:
         return obj.room_type.name if obj.room_type else "Standard Room"

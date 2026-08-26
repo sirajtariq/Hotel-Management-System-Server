@@ -3,7 +3,47 @@ from rest_framework import serializers
 from apps.bookings.models import Booking
 from apps.rooms.serializers import RoomSerializer
 
-class BookingSerializer(serializers.ModelSerializer):
+class BookingListSerializer(serializers.ModelSerializer):
+    property_name = serializers.CharField(source='property.name', read_only=True)
+    room_number = serializers.CharField(source='room.room_number', read_only=True)
+    room_type_name = serializers.CharField(source='room.room_type.name', read_only=True, default='Standard Executive Suite')
+    invoice_number = serializers.SerializerMethodField()
+    remaining_balance = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Booking
+        fields = [
+            'id',
+            'invoice_number',
+            'property_name',
+            'room_number',
+            'room_type_name',
+            'guest_name',
+            'guest_phone',
+            'guest_email',
+            'booking_type',
+            'check_in',
+            'check_out',
+            'check_in_date',
+            'check_out_date',
+            'total_duration',
+            'total_amount',
+            'paid_amount',
+            'remaining_balance',
+            'payment_status',
+            'status',
+            'created_at',
+        ]
+
+    def get_invoice_number(self, obj) -> str:
+        tenant_code = getattr(obj.tenant, 'code', '') or 'RS'
+        return f"INV-{tenant_code.upper()}-2026-{obj.id:04d}"
+
+    def get_remaining_balance(self, obj) -> Decimal:
+        return max(Decimal('0.00'), obj.total_amount - obj.paid_amount)
+
+
+class BookingDetailSerializer(serializers.ModelSerializer):
     room_details = RoomSerializer(source='room', read_only=True)
     invoice_number = serializers.SerializerMethodField()
     tenant_name = serializers.CharField(source='tenant.name', read_only=True)
@@ -44,6 +84,15 @@ class BookingSerializer(serializers.ModelSerializer):
             'created_at', 'updated_at'
         ]
 
+    def to_internal_value(self, data):
+        if isinstance(data, dict):
+            data = data.copy()
+            if 'room_id' in data and 'room' not in data:
+                data['room'] = data['room_id']
+            if 'property_id' in data and 'property' not in data:
+                data['property'] = data['property_id']
+        return super().to_internal_value(data)
+
     def get_invoice_number(self, obj) -> str:
         tenant_code = getattr(obj.tenant, 'code', '') or 'RS'
         return f"INV-{tenant_code.upper()}-2026-{obj.id:04d}"
@@ -55,6 +104,9 @@ class BookingSerializer(serializers.ModelSerializer):
 
     def get_remaining_balance(self, obj) -> Decimal:
         return max(Decimal('0.00'), obj.total_amount - obj.paid_amount)
+
+
+BookingSerializer = BookingDetailSerializer
 
 class RecordPaymentSerializer(serializers.Serializer):
     amount = serializers.DecimalField(max_digits=12, decimal_places=2, min_value=Decimal('0.01'))

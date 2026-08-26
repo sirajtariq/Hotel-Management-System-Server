@@ -38,6 +38,15 @@ class ExpenseSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ['id', 'tenant', 'created_by', 'created_at', 'updated_at']
 
+    def to_internal_value(self, data):
+        if isinstance(data, dict):
+            data = data.copy()
+            if 'account_head_id' in data and 'account_head' not in data:
+                data['account_head'] = data['account_head_id']
+            if 'property_id' in data and 'property' not in data:
+                data['property'] = data['property_id']
+        return super().to_internal_value(data)
+
     def get_created_by_name(self, obj):
         if obj.created_by:
             name = obj.created_by.get_full_name()

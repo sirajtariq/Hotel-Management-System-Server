@@ -4,13 +4,17 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from core.viewsets import TenantScopedViewSet
 from apps.bookings.models import Booking
-from apps.bookings.serializers import BookingSerializer, RecordPaymentSerializer
+from apps.bookings.serializers import (
+    BookingListSerializer,
+    BookingDetailSerializer,
+    RecordPaymentSerializer,
+)
 from apps.bookings.services.booking_service import BookingService
 from core.permissions import HasTenantAccess, HasModulePermission
 
 class BookingViewSet(TenantScopedViewSet):
-    queryset = Booking.objects.all()
-    serializer_class = BookingSerializer
+    queryset = Booking.objects.select_related('property', 'room', 'room__room_type', 'tenant').all()
+    serializer_class = BookingDetailSerializer
     permission_classes = [IsAuthenticated, HasTenantAccess, HasModulePermission]
     action_permissions = {
         'list': 'bookings:view',
@@ -26,6 +30,10 @@ class BookingViewSet(TenantScopedViewSet):
         'record_payment': 'bookings:record_payment',
     }
 
+    def get_serializer_class(self):
+        if self.action == 'list':
+            return BookingListSerializer
+        return BookingDetailSerializer
 
     def get_queryset(self):
         qs = super().get_queryset()
