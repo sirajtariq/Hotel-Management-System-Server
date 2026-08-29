@@ -1,4 +1,4 @@
-from django.db.models import Count, Q
+from django.core.cache import cache
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -47,9 +47,17 @@ class PropertyViewSet(TenantScopedViewSet):
 
     @action(detail=False, methods=['get'], url_path='selector')
     def dropdown_selector(self, request):
-        """High-speed endpoint for booking/expense form dropdowns"""
-        qs = self.get_queryset().filter(status='ACTIVE').only('id', 'name', 'city')
+        """High-speed endpoint for booking/expense form dropdowns with in-memory caching"""
+        tenant_id = getattr(request.user, 'tenant_id', None) or 'global'
+        cache_key = f"tenant_{tenant_id}_property_selector"
+
+        cached_data = cache.get(cache_key)
+        if cached_data is not None:
+            return Response(cached_data)
+
+        qs = self.get_queryset().filter(status='ACTIVE').only('id', 'name', 'city').order_by('name')
         serializer = PropertySelectorSerializer(qs, many=True)
+        cache.set(cache_key, serializer.data, timeout=900)
         return Response(serializer.data)
 
     def create(self, request, *args, **kwargs):

@@ -1,4 +1,5 @@
 from django.db import models
+from django.core.cache import cache
 from apps.tenants.models import Tenant
 from apps.properties.models import Property
 
@@ -9,17 +10,35 @@ class RoomType(models.Model):
     base_price_per_night = models.DecimalField(max_digits=10, decimal_places=2)
     hourly_rate = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, help_text="Rate per hour for short stay")
     is_hourly_allowed = models.BooleanField(default=True)
+    is_active = models.BooleanField(default=True)
     max_occupancy = models.PositiveIntegerField(default=2)
     description = models.TextField(blank=True, null=True)
+    amenities = models.JSONField(default=list, blank=True, help_text="Room type default amenities list")
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         db_table = 'room_types'
         unique_together = ('property', 'name')
-        ordering = ['name']
+        ordering = ['-created_at']
         indexes = [
-            models.Index(fields=['tenant', 'property']),
+            models.Index(fields=['tenant', 'property'], name='idx_rtype_tenant_prop'),
+            models.Index(fields=['tenant', 'is_active'], name='idx_rtype_tenant_active'),
         ]
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        tenant_id = self.tenant_id or 'global'
+        cache.delete(f"tenant_{tenant_id}_room_type_selector_all")
+        if self.property_id:
+            cache.delete(f"tenant_{tenant_id}_room_type_selector_{self.property_id}")
+
+    def delete(self, *args, **kwargs):
+        tenant_id = self.tenant_id or 'global'
+        prop_id = self.property_id
+        super().delete(*args, **kwargs)
+        cache.delete(f"tenant_{tenant_id}_room_type_selector_all")
+        if prop_id:
+            cache.delete(f"tenant_{tenant_id}_room_type_selector_{prop_id}")
 
     def __str__(self):
         return f"{self.name} ({self.property.name}) - ${self.base_price_per_night}/night"
@@ -49,6 +68,7 @@ class Room(models.Model):
     housekeeping_status = models.CharField(max_length=50, choices=HOUSEKEEPING_STATUS_CHOICES, default='CLEAN', db_index=True)
     hourly_rate = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, help_text="Rate per hour for short stay")
     is_hourly_allowed = models.BooleanField(default=True)
+    amenities = models.JSONField(default=list, blank=True, help_text="Room specific amenities override")
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -58,9 +78,18 @@ class Room(models.Model):
         unique_together = ('property', 'room_number')
         ordering = ['room_number']
         indexes = [
-            models.Index(fields=['tenant', 'property', 'status']),
-            models.Index(fields=['room_number']),
+            models.Index(fields=['tenant', 'property', 'status'], name='idx_room_tenant_prop_stat'),
+            models.Index(fields=['tenant', 'room_type'], name='idx_room_tenant_type'),
+            models.Index(fields=['tenant', 'room_number'], name='idx_room_tenant_num'),
         ]
+
+    def save(self, *args, **kwargs):
+        if self.room_type:
+            if not self.hourly_rate and self.room_type.hourly_rate is not None:
+                self.hourly_rate = self.room_type.hourly_rate
+            if self.room_type.is_hourly_allowed is not None:
+                self.is_hourly_allowed = self.room_type.is_hourly_allowed
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"Room {self.room_number} ({self.property.name}) - {self.status}"

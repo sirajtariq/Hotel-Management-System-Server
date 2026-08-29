@@ -6,6 +6,8 @@ from drf_spectacular.views import (
     SpectacularSwaggerView,
 )
 
+from apps.users.views import CustomTokenObtainPairView, get_current_user_session
+
 urlpatterns = [
     path('admin/', admin.site.urls),
 
@@ -15,6 +17,8 @@ urlpatterns = [
     path('api/schema/redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
 
     # API v1 app endpoints
+    path('api/v1/auth/login/', CustomTokenObtainPairView.as_view(), name='auth_login'),
+    path('api/v1/auth/me/', get_current_user_session, name='auth_me'),
     path('api/v1/tenants/', include('apps.tenants.urls')),
     path('api/v1/users/', include('apps.users.urls')),
     path('api/v1/roles/', include('apps.users.roles_urls')),

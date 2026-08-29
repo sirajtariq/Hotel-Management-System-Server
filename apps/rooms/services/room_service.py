@@ -6,7 +6,16 @@ from apps.tenants.models import Tenant
 
 class RoomService:
     @staticmethod
-    def create_room_type(tenant: Tenant, property_obj: Property, name: str, base_price_per_night: Decimal, max_occupancy: int = 2, description: str = '') -> RoomType:
+    def create_room_type(
+        tenant: Tenant,
+        property_obj: Property,
+        name: str,
+        base_price_per_night: Decimal,
+        max_occupancy: int = 2,
+        description: str = '',
+        hourly_rate: Decimal = None,
+        is_hourly_allowed: bool = True
+    ) -> RoomType:
         """
         SSOT function to create a room type.
         """
@@ -21,13 +30,26 @@ class RoomService:
             property=property_obj,
             name=name,
             base_price_per_night=base_price_per_night,
+            hourly_rate=hourly_rate,
+            is_hourly_allowed=is_hourly_allowed,
             max_occupancy=max_occupancy,
             description=description
         )
         return room_type
 
     @staticmethod
-    def create_room(tenant: Tenant, property_obj: Property, room_type: RoomType, room_number: str, floor: str = '', status: str = 'AVAILABLE') -> Room:
+    def update_room_type(room_type: RoomType, **kwargs) -> RoomType:
+        """
+        SSOT function to update a room type.
+        """
+        for attr, val in kwargs.items():
+            if hasattr(room_type, attr):
+                setattr(room_type, attr, val)
+        room_type.save()
+        return room_type
+
+    @staticmethod
+    def create_room(tenant: Tenant, property_obj: Property, room_type: RoomType, room_number: str, floor: str = '', status: str = 'AVAILABLE', amenities: list = None) -> Room:
         """
         SSOT function to create a room.
         """
@@ -46,13 +68,13 @@ class RoomService:
                 raise ValidationError(f"Room limit reached for this subscription plan (Limit: {tenant.max_rooms}). Please contact SuperAdmin to upgrade.")
 
         room = Room.objects.create(
-
             tenant=tenant,
             property=property_obj,
             room_type=room_type,
             room_number=room_number,
             floor=floor,
-            status=status
+            status=status,
+            amenities=amenities or []
         )
         return room
 

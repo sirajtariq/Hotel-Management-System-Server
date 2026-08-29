@@ -1,4 +1,5 @@
 from django.db import models
+from django.core.cache import cache
 from apps.tenants.models import Tenant
 
 class Property(models.Model):
@@ -25,9 +26,19 @@ class Property(models.Model):
         db_table = 'properties'
         ordering = ['-created_at']
         indexes = [
-            models.Index(fields=['tenant', 'status']),
-            models.Index(fields=['city']),
+            models.Index(fields=['tenant', 'status'], name='idx_prop_tenant_stat'),
+            models.Index(fields=['tenant', 'city'], name='idx_prop_tenant_city'),
         ]
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        tenant_id = self.tenant_id or 'global'
+        cache.delete(f"tenant_{tenant_id}_property_selector")
+
+    def delete(self, *args, **kwargs):
+        tenant_id = self.tenant_id or 'global'
+        super().delete(*args, **kwargs)
+        cache.delete(f"tenant_{tenant_id}_property_selector")
 
     def __str__(self):
         return f"{self.name} - {self.city}"

@@ -9,7 +9,7 @@ from apps.bookings.serializers import (
     BookingDetailSerializer,
     RecordPaymentSerializer,
 )
-from apps.bookings.services.booking_service import BookingService
+from apps.bookings.services.booking_service import BookingService, create_booking_with_lock
 from core.permissions import HasTenantAccess, HasModulePermission
 
 class BookingViewSet(TenantScopedViewSet):
@@ -37,7 +37,20 @@ class BookingViewSet(TenantScopedViewSet):
 
     def get_queryset(self):
         qs = super().get_queryset()
-        return qs.select_related('property', 'room', 'room__room_type', 'tenant')
+        related = ['property', 'room', 'room__room_type', 'tenant']
+        existing_fields = [f.name for f in Booking._meta.get_fields()]
+        if 'guest' in existing_fields:
+            related.append('guest')
+
+        qs = qs.select_related(*related)
+
+        if self.action == 'list':
+            deferred_fields = ['notes', 'special_requests', 'internal_remarks', 'cancellation_reason']
+            to_defer = [field for field in deferred_fields if field in existing_fields]
+            if to_defer:
+                qs = qs.defer(*to_defer)
+            return qs.order_by('-created_at')
+        return qs.order_by('-created_at')
 
 
     def create(self, request, *args, **kwargs):

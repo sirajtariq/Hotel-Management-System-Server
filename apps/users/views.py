@@ -1,12 +1,13 @@
 from django.db.models import Count
 from rest_framework import status, permissions
-from rest_framework.decorators import action
+from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework_simplejwt.views import TokenObtainPairView
 from core.viewsets import TenantScopedViewSet
 from apps.users.models import User, Role
 from apps.users.serializers import (
     UserSerializer,
+    UserSessionSerializer,
     UserCreateSerializer,
     CustomTokenObtainPairSerializer,
     UserProfileSerializer,
@@ -23,6 +24,28 @@ from core.permissions_registry import PERMISSIONS_CATALOG
 
 class CustomTokenObtainPairView(TokenObtainPairView):
     serializer_class = CustomTokenObtainPairSerializer
+
+    def post(self, request, *args, **kwargs):
+        response = super().post(request, *args, **kwargs)
+        if response.status_code == 200:
+            user = None
+            username_or_email = request.data.get('username') or request.data.get('email')
+            if username_or_email:
+                user = User.objects.select_related('tenant', 'custom_role').prefetch_related('assigned_properties').filter(
+                    username__iexact=username_or_email
+                ).first() or User.objects.select_related('tenant', 'custom_role').prefetch_related('assigned_properties').filter(
+                    email__iexact=username_or_email
+                ).first()
+            if user:
+                response.data['user'] = UserSessionSerializer(user).data
+        return response
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def get_current_user_session(request):
+    user = User.objects.select_related('tenant', 'custom_role').prefetch_related('assigned_properties').get(id=request.user.id)
+    serializer = UserSessionSerializer(user)
+    return Response(serializer.data)
 
 class UserViewSet(TenantScopedViewSet):
     queryset = User.objects.all()
