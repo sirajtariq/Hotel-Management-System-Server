@@ -11,7 +11,7 @@ class AccountHeadSerializer(serializers.ModelSerializer):
             'id', 'tenant', 'name', 'description',
             'is_active', 'created_at', 'expenses_count', 'total_spent_amount'
         ]
-        read_only_fields = ['id', 'tenant', 'created_at']
+        read_only_fields = ['id', 'tenant', 'created_at', 'updated_at']
 
 class ExpenseCategorySerializer(serializers.ModelSerializer):
     class Meta:

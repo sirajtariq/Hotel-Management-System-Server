@@ -46,13 +46,33 @@ class AccountHeadViewSet(TenantScopedViewSet):
             total_spent_amount=Coalesce(Sum('expenses__amount'), Value(Decimal('0.00')))
         ).order_by('name')
 
+    def perform_create(self, serializer):
+        tenant = getattr(self.request.user, 'tenant', None)
+        if not tenant and hasattr(self.request.user, 'tenant_id') and self.request.user.tenant_id:
+            from apps.tenants.models import Tenant
+            tenant = Tenant.objects.filter(id=self.request.user.tenant_id).first()
+
+        if not tenant:
+            from rest_framework import serializers as drf_serializers
+            raise drf_serializers.ValidationError({"tenant": "Authenticated user is not linked to any active tenant."})
+
+        serializer.save(tenant=tenant)
+
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        tenant = request.user.tenant
+        tenant = getattr(request.user, 'tenant', None)
+        if not tenant and hasattr(request.user, 'tenant_id') and request.user.tenant_id:
+            from apps.tenants.models import Tenant
+            tenant = Tenant.objects.filter(id=request.user.tenant_id).first()
+
         if request.user.is_superuser or getattr(request.user, 'role', '') == 'SUPERADMIN':
             tenant = serializer.validated_data.get('tenant', tenant)
+
+        if not tenant:
+            from rest_framework import serializers as drf_serializers
+            raise drf_serializers.ValidationError({"tenant": "Authenticated user is not linked to any active tenant."})
 
         head = ExpenseService.create_account_head(
             tenant=tenant,
@@ -85,13 +105,33 @@ class ExpenseCategoryViewSet(TenantScopedViewSet):
         'destroy': 'expenses:delete',
     }
 
+    def perform_create(self, serializer):
+        tenant = getattr(self.request.user, 'tenant', None)
+        if not tenant and hasattr(self.request.user, 'tenant_id') and self.request.user.tenant_id:
+            from apps.tenants.models import Tenant
+            tenant = Tenant.objects.filter(id=self.request.user.tenant_id).first()
+
+        if not tenant:
+            from rest_framework import serializers as drf_serializers
+            raise drf_serializers.ValidationError({"tenant": "Authenticated user is not linked to any active tenant."})
+
+        serializer.save(tenant=tenant)
+
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        tenant = request.user.tenant
+        tenant = getattr(request.user, 'tenant', None)
+        if not tenant and hasattr(request.user, 'tenant_id') and request.user.tenant_id:
+            from apps.tenants.models import Tenant
+            tenant = Tenant.objects.filter(id=request.user.tenant_id).first()
+
         if request.user.is_superuser or getattr(request.user, 'role', '') == 'SUPERADMIN':
             tenant = serializer.validated_data.get('tenant', tenant)
+
+        if not tenant:
+            from rest_framework import serializers as drf_serializers
+            raise drf_serializers.ValidationError({"tenant": "Authenticated user is not linked to any active tenant."})
 
         category = ExpenseService.create_category(
             tenant=tenant,
@@ -147,13 +187,33 @@ class ExpenseViewSet(TenantScopedViewSet):
 
         return qs
 
+    def perform_create(self, serializer):
+        tenant = getattr(self.request.user, 'tenant', None)
+        if not tenant and hasattr(self.request.user, 'tenant_id') and self.request.user.tenant_id:
+            from apps.tenants.models import Tenant
+            tenant = Tenant.objects.filter(id=self.request.user.tenant_id).first()
+
+        if not tenant:
+            from rest_framework import serializers as drf_serializers
+            raise drf_serializers.ValidationError({"tenant": "Authenticated user is not linked to any active tenant."})
+
+        serializer.save(tenant=tenant)
+
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        tenant = request.user.tenant
+        tenant = getattr(request.user, 'tenant', None)
+        if not tenant and hasattr(request.user, 'tenant_id') and request.user.tenant_id:
+            from apps.tenants.models import Tenant
+            tenant = Tenant.objects.filter(id=request.user.tenant_id).first()
+
         if request.user.is_superuser or getattr(request.user, 'role', '') == 'SUPERADMIN':
             tenant = serializer.validated_data.get('tenant', tenant)
+
+        if not tenant:
+            from rest_framework import serializers as drf_serializers
+            raise drf_serializers.ValidationError({"tenant": "Authenticated user is not linked to any active tenant."})
 
         data = serializer.validated_data
         expense = ExpenseService.create_expense(

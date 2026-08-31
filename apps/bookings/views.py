@@ -44,6 +44,24 @@ class BookingViewSet(TenantScopedViewSet):
 
         qs = qs.select_related(*related)
 
+        search = self.request.query_params.get('search')
+        if search:
+            from django.db.models import Q
+            qs = qs.filter(
+                Q(guest_name__icontains=search) |
+                Q(guest_phone__icontains=search) |
+                Q(room__room_number__icontains=search) |
+                Q(id__icontains=search)
+            )
+
+        status_param = self.request.query_params.get('status')
+        if status_param and status_param != 'ALL':
+            qs = qs.filter(status__iexact=status_param)
+
+        property_param = self.request.query_params.get('property') or self.request.query_params.get('property_id')
+        if property_param and property_param != 'ALL':
+            qs = qs.filter(property_id=property_param)
+
         if self.action == 'list':
             deferred_fields = ['notes', 'special_requests', 'internal_remarks', 'cancellation_reason']
             to_defer = [field for field in deferred_fields if field in existing_fields]
@@ -53,13 +71,33 @@ class BookingViewSet(TenantScopedViewSet):
         return qs.order_by('-created_at')
 
 
+    def perform_create(self, serializer):
+        tenant = getattr(self.request.user, 'tenant', None)
+        if not tenant and hasattr(self.request.user, 'tenant_id') and self.request.user.tenant_id:
+            from apps.tenants.models import Tenant
+            tenant = Tenant.objects.filter(id=self.request.user.tenant_id).first()
+
+        if not tenant:
+            from rest_framework import serializers as drf_serializers
+            raise drf_serializers.ValidationError({"tenant": "Authenticated user is not linked to any active tenant."})
+
+        serializer.save(tenant=tenant)
+
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        tenant = request.user.tenant
+        tenant = getattr(request.user, 'tenant', None)
+        if not tenant and hasattr(request.user, 'tenant_id') and request.user.tenant_id:
+            from apps.tenants.models import Tenant
+            tenant = Tenant.objects.filter(id=request.user.tenant_id).first()
+
         if request.user.is_superuser or getattr(request.user, 'role', '') == 'SUPERADMIN':
             tenant = serializer.validated_data.get('tenant', tenant)
+
+        if not tenant:
+            from rest_framework import serializers as drf_serializers
+            raise drf_serializers.ValidationError({"tenant": "Authenticated user is not linked to any active tenant."})
 
         data = serializer.validated_data
         booking = BookingService.create_booking(
@@ -100,15 +138,26 @@ class BookingViewSet(TenantScopedViewSet):
     def check_in(self, request, pk=None):
         booking = self.get_object()
         updated_booking = BookingService.check_in(booking)
-        serializer = self.get_serializer(updated_booking)
-        return Response(serializer.data)
+        return Response({
+            "success": True,
+            "message": f"Guest {updated_booking.guest_name} checked in successfully.",
+            "id": updated_booking.id,
+            "status": "CHECKED_IN",
+            "roomStatus": "OCCUPIED"
+        }, status=status.HTTP_200_OK)
 
     @action(detail=True, methods=['post'], url_path='check-out')
     def check_out(self, request, pk=None):
         booking = self.get_object()
         updated_booking = BookingService.check_out(booking)
-        serializer = self.get_serializer(updated_booking)
-        return Response(serializer.data)
+        return Response({
+            "success": True,
+            "message": f"Guest {updated_booking.guest_name} checked out successfully.",
+            "id": updated_booking.id,
+            "status": "CHECKED_OUT",
+            "roomStatus": "AVAILABLE",
+            "housekeepingStatus": "DIRTY"
+        }, status=status.HTTP_200_OK)
 
     @action(detail=True, methods=['post'], url_path='cancel')
     def cancel(self, request, pk=None):

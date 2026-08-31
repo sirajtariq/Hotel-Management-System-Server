@@ -57,14 +57,19 @@ class TenantScopedViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         user = self.request.user
-        model = serializer.Meta.model
+        model = getattr(serializer.Meta, 'model', None)
 
         # If model is tenant-scoped
-        if hasattr(model, 'tenant'):
+        if model and hasattr(model, 'tenant'):
+            tenant = getattr(user, 'tenant', None)
+            if not tenant and hasattr(user, 'tenant_id') and user.tenant_id:
+                from apps.tenants.models import Tenant
+                tenant = Tenant.objects.filter(id=user.tenant_id).first()
+
             if user.is_superuser or getattr(user, 'role', '') == 'SUPERADMIN':
-                if 'tenant' not in serializer.validated_data:
-                    if getattr(user, 'tenant', None):
-                        serializer.save(tenant=user.tenant)
+                if 'tenant' not in serializer.validated_data or not serializer.validated_data.get('tenant'):
+                    if tenant:
+                        serializer.save(tenant=tenant)
                     elif 'tenant_id' in self.request.data:
                         serializer.save(tenant_id=self.request.data['tenant_id'])
                     else:
@@ -72,8 +77,8 @@ class TenantScopedViewSet(viewsets.ModelViewSet):
                 else:
                     serializer.save()
             else:
-                if not getattr(user, 'tenant', None):
+                if not tenant:
                     raise exceptions.PermissionDenied("User must belong to a tenant to create tenant-scoped resources.")
-                serializer.save(tenant=user.tenant)
+                serializer.save(tenant=tenant)
         else:
             serializer.save()

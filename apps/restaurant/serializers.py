@@ -135,6 +135,7 @@ class RestaurantOrderDetailSerializer(serializers.ModelSerializer):
             'discount_amount', 'tax_percentage', 'tax_amount', 'grand_total',
             'notes', 'created_by_name', 'created_at', 'updated_at', 'items'
         ]
+        read_only_fields = ['id', 'tenant', 'created_at', 'updated_at']
 
     def get_created_by_name(self, obj):
         if obj.created_by:

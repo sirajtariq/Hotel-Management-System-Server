@@ -103,7 +103,7 @@ else:
     DATABASES = {
         'default': env.db('DATABASE_URL', default='sqlite:///' + str(BASE_DIR / 'db.sqlite3'))
     }
-    DATABASES['default']['CONN_MAX_AGE'] = 600
+    DATABASES['default']['CONN_MAX_AGE'] = 0 if DEBUG else 600
     DATABASES['default']['CONN_HEALTH_CHECKS'] = True
 
 CACHES = {

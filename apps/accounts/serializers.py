@@ -19,7 +19,7 @@ class PaymentAccountSerializer(serializers.ModelSerializer):
             'is_active',
             'created_at',
         ]
-        read_only_fields = ['id', 'current_balance', 'created_at']
+        read_only_fields = ['id', 'tenant', 'current_balance', 'created_at']
 
     def create(self, validated_data):
         # Set current balance to opening balance on creation
@@ -46,6 +46,7 @@ class AccountTransactionSerializer(serializers.ModelSerializer):
             'created_by_name',
             'created_at',
         ]
+        read_only_fields = ['id', 'tenant', 'created_at']
 
     def get_created_by_name(self, obj):
         if obj.created_by:
@@ -73,6 +74,7 @@ class AccountTransferSerializer(serializers.ModelSerializer):
             'created_by_name',
             'created_at',
         ]
+        read_only_fields = ['id', 'tenant', 'created_at']
 
     def get_created_by_name(self, obj):
         if obj.created_by:

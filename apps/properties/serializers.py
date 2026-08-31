@@ -74,10 +74,14 @@ class PropertyDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = Property
         fields = '__all__'
+        read_only_fields = ['id', 'tenant', 'created_at', 'updated_at']
 
+
+PropertySerializer = PropertyDetailSerializer
 
 class PropertySelectorSerializer(serializers.ModelSerializer):
     """Ultra-lightweight selector for global dropdowns (~30 bytes per row)"""
     class Meta:
         model = Property
         fields = ['id', 'name', 'city']
+

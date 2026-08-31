@@ -39,7 +39,15 @@ class PaymentAccountViewSet(TenantScopedViewSet):
         return qs
 
     def perform_create(self, serializer):
-        tenant = self.request.user.tenant
+        tenant = getattr(self.request.user, 'tenant', None)
+        if not tenant and hasattr(self.request.user, 'tenant_id') and self.request.user.tenant_id:
+            from apps.tenants.models import Tenant
+            tenant = Tenant.objects.filter(id=self.request.user.tenant_id).first()
+
+        if not tenant:
+            from rest_framework import serializers as drf_serializers
+            raise drf_serializers.ValidationError({"tenant": "Authenticated user is not linked to any active tenant."})
+
         serializer.save(tenant=tenant)
 
     @action(detail=True, methods=['post'], url_path='set-default')
@@ -65,13 +73,34 @@ class AccountTransferViewSet(TenantScopedViewSet):
     serializer_class = AccountTransferSerializer
     permission_classes = [IsAuthenticated, HasTenantAccess]
 
+    def perform_create(self, serializer):
+        tenant = getattr(self.request.user, 'tenant', None)
+        if not tenant and hasattr(self.request.user, 'tenant_id') and self.request.user.tenant_id:
+            from apps.tenants.models import Tenant
+            tenant = Tenant.objects.filter(id=self.request.user.tenant_id).first()
+
+        if not tenant:
+            from rest_framework import serializers as drf_serializers
+            raise drf_serializers.ValidationError({"tenant": "Authenticated user is not linked to any active tenant."})
+
+        serializer.save(tenant=tenant)
+
     def create(self, request, *args, **kwargs):
         serializer = CreateTransferSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
 
+        tenant = getattr(request.user, 'tenant', None)
+        if not tenant and hasattr(request.user, 'tenant_id') and request.user.tenant_id:
+            from apps.tenants.models import Tenant
+            tenant = Tenant.objects.filter(id=request.user.tenant_id).first()
+
+        if not tenant:
+            from rest_framework import serializers as drf_serializers
+            raise drf_serializers.ValidationError({"tenant": "Authenticated user is not linked to any active tenant."})
+
         transfer = AccountService.execute_transfer(
-            tenant=request.user.tenant,
+            tenant=tenant,
             from_account_id=data['from_account_id'],
             to_account_id=data['to_account_id'],
             amount=data['amount'],

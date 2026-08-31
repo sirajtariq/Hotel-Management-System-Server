@@ -14,7 +14,8 @@ class RoomService:
         max_occupancy: int = 2,
         description: str = '',
         hourly_rate: Decimal = None,
-        is_hourly_allowed: bool = True
+        is_hourly_allowed: bool = True,
+        amenities: list = None
     ) -> RoomType:
         """
         SSOT function to create a room type.
@@ -33,7 +34,8 @@ class RoomService:
             hourly_rate=hourly_rate,
             is_hourly_allowed=is_hourly_allowed,
             max_occupancy=max_occupancy,
-            description=description
+            description=description,
+            amenities=amenities or []
         )
         return room_type
 
@@ -49,7 +51,18 @@ class RoomService:
         return room_type
 
     @staticmethod
-    def create_room(tenant: Tenant, property_obj: Property, room_type: RoomType, room_number: str, floor: str = '', status: str = 'AVAILABLE', amenities: list = None) -> Room:
+    def create_room(
+        tenant: Tenant,
+        property_obj: Property,
+        room_type: RoomType,
+        room_number: str,
+        floor: str = '',
+        status: str = 'AVAILABLE',
+        amenities: list = None,
+        base_price: Decimal = None,
+        hourly_rate: Decimal = None,
+        is_hourly_allowed: bool = None
+    ) -> Room:
         """
         SSOT function to create a room.
         """
@@ -63,9 +76,16 @@ class RoomService:
             raise ValidationError({'room_number': 'Room with this number already exists in this property.'})
 
         if tenant.max_rooms is not None:
-            current_count = Room.objects.filter(tenant=tenant).count()
+            current_room_qs = Room.objects.filter(
+                tenant=tenant,
+                room_type__isnull=False
+            )
+            if hasattr(Room, 'is_active'):
+                current_room_qs = current_room_qs.filter(is_active=True)
+            current_count = current_room_qs.count()
+
             if current_count >= tenant.max_rooms:
-                raise ValidationError(f"Room limit reached for this subscription plan (Limit: {tenant.max_rooms}). Please contact SuperAdmin to upgrade.")
+                raise ValidationError({"room": f"You have reached your subscription room limit ({tenant.max_rooms} rooms). Upgrade your plan to add more rooms."})
 
         room = Room.objects.create(
             tenant=tenant,
@@ -74,7 +94,10 @@ class RoomService:
             room_number=room_number,
             floor=floor,
             status=status,
-            amenities=amenities or []
+            amenities=amenities or [],
+            base_price=base_price,
+            hourly_rate=hourly_rate,
+            is_hourly_allowed=is_hourly_allowed
         )
         return room
 

@@ -40,7 +40,7 @@ class UserSerializer(serializers.ModelSerializer):
             'tenant', 'tenant_name', 'tenant_details', 'phone_number',
             'is_active', 'date_joined'
         ]
-        read_only_fields = ['id', 'date_joined']
+        read_only_fields = ['id', 'tenant', 'date_joined']
 
     def get_full_name(self, obj):
         name = f"{obj.first_name or ''} {obj.last_name or ''}".strip()
@@ -173,6 +173,7 @@ class UserCreateSerializer(serializers.ModelSerializer):
             'id', 'username', 'email', 'password', 'first_name',
             'last_name', 'role', 'custom_role', 'tenant', 'phone_number'
         ]
+        read_only_fields = ['id', 'tenant']
 
 class UserSessionSerializer(serializers.ModelSerializer):
     full_name = serializers.SerializerMethodField()

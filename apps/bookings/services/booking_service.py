@@ -168,6 +168,10 @@ class BookingService:
 
         payment_status = cls.calculate_payment_status(paid_amount, total_amount)
 
+        booking_status = 'RESERVED'
+        if paid_amount >= total_amount and total_amount > 0:
+            booking_status = 'CONFIRMED'
+
         booking = Booking.objects.create(
             tenant=tenant,
             property=room.property,
@@ -193,8 +197,16 @@ class BookingService:
             total_amount=total_amount,
             paid_amount=paid_amount,
             payment_status=payment_status,
-            status='PENDING'
+            status=booking_status
         )
+
+        now = timezone.now()
+        if check_in_dt <= now and check_out_dt > now:
+            room.status = 'OCCUPIED'
+        else:
+            room.status = 'RESERVED'
+        room.save(update_fields=['status', 'updated_at'])
+
         return booking
 
     @classmethod
@@ -231,10 +243,11 @@ class BookingService:
         booking.status = 'CHECKED_OUT'
         booking.save(update_fields=['status', 'updated_at'])
 
-        # Update room status to CLEANING
+        # Update room status to AVAILABLE and housekeeping_status to DIRTY
         room = booking.room
-        room.status = 'CLEANING'
-        room.save(update_fields=['status', 'updated_at'])
+        room.status = 'AVAILABLE'
+        room.housekeeping_status = 'DIRTY'
+        room.save(update_fields=['status', 'housekeeping_status', 'updated_at'])
 
         return booking
 
@@ -247,8 +260,8 @@ class BookingService:
         booking.status = 'CANCELLED'
         booking.save(update_fields=['status', 'updated_at'])
 
-        # Free room if checked in
-        if booking.room.status == 'OCCUPIED':
+        # Free room if reserved or occupied
+        if booking.room.status in ['OCCUPIED', 'RESERVED']:
             booking.room.status = 'AVAILABLE'
             booking.room.save(update_fields=['status', 'updated_at'])
 

@@ -66,6 +66,7 @@ class Room(models.Model):
     floor = models.CharField(max_length=50, blank=True, null=True)
     status = models.CharField(max_length=50, choices=STATUS_CHOICES, default='AVAILABLE', db_index=True)
     housekeeping_status = models.CharField(max_length=50, choices=HOUSEKEEPING_STATUS_CHOICES, default='CLEAN', db_index=True)
+    base_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, help_text="Room specific base price override per night")
     hourly_rate = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, help_text="Rate per hour for short stay")
     is_hourly_allowed = models.BooleanField(default=True)
     amenities = models.JSONField(default=list, blank=True, help_text="Room specific amenities override")
@@ -85,9 +86,11 @@ class Room(models.Model):
 
     def save(self, *args, **kwargs):
         if self.room_type:
-            if not self.hourly_rate and self.room_type.hourly_rate is not None:
+            if (self.base_price is None or float(self.base_price) <= 0) and self.room_type.base_price_per_night is not None:
+                self.base_price = self.room_type.base_price_per_night
+            if (self.hourly_rate is None or float(self.hourly_rate) <= 0) and self.room_type.hourly_rate is not None:
                 self.hourly_rate = self.room_type.hourly_rate
-            if self.room_type.is_hourly_allowed is not None:
+            if self.is_hourly_allowed is None and self.room_type.is_hourly_allowed is not None:
                 self.is_hourly_allowed = self.room_type.is_hourly_allowed
         super().save(*args, **kwargs)
 
