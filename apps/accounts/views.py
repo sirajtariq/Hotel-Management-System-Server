@@ -1,3 +1,4 @@
+from django.db.models import Count
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -36,7 +37,7 @@ class PaymentAccountViewSet(TenantScopedViewSet):
         if search:
             qs = qs.filter(name__icontains=search) | qs.filter(bank_name__icontains=search)
 
-        return qs
+        return qs.annotate(transactions_count=Count('transactions')).order_by('-is_default', 'name')
 
     def perform_create(self, serializer):
         tenant = getattr(self.request.user, 'tenant', None)
@@ -49,6 +50,12 @@ class PaymentAccountViewSet(TenantScopedViewSet):
             raise drf_serializers.ValidationError({"tenant": "Authenticated user is not linked to any active tenant."})
 
         serializer.save(tenant=tenant)
+
+    def perform_update(self, serializer):
+        instance = serializer.save()
+        if not instance.is_active and instance.is_default:
+            instance.is_default = False
+            instance.save(update_fields=['is_default'])
 
     @action(detail=True, methods=['post'], url_path='set-default')
     def set_as_default(self, request, pk=None):

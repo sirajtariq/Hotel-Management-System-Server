@@ -73,14 +73,35 @@ class DiningTableSerializer(serializers.ModelSerializer):
     property_name = serializers.ReadOnlyField(source='property.name')
     property = serializers.PrimaryKeyRelatedField(queryset=Property.objects.all(), required=False, allow_null=True)
     floor_or_section = serializers.CharField(required=False, allow_blank=True, default='Ground Floor')
+    active_order = serializers.SerializerMethodField()
 
     class Meta:
         model = DiningTable
         fields = [
             'id', 'tenant', 'property', 'property_name',
-            'table_number', 'capacity', 'floor_or_section', 'status'
+            'table_number', 'capacity', 'floor_or_section', 'status',
+            'active_order'
         ]
         read_only_fields = ['id', 'tenant']
+
+    def get_active_order(self, obj):
+        if obj.status == 'OCCUPIED':
+            order = obj.orders.filter(
+                status__in=['PENDING', 'PREPARING', 'READY', 'SERVED'],
+                payment_status='UNPAID'
+            ).order_by('-created_at').first()
+            if order:
+                server_name = ""
+                if order.created_by:
+                    server_name = order.created_by.get_full_name() or order.created_by.username
+                return {
+                    'id': order.id,
+                    'order_number': order.order_number,
+                    'customer_name': order.customer_name or 'Dine-In Guest',
+                    'server_name': server_name,
+                    'grand_total': str(order.grand_total),
+                }
+        return None
 
 
 class RestaurantOrderItemSerializer(serializers.ModelSerializer):

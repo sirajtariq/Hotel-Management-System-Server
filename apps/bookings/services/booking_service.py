@@ -1,3 +1,4 @@
+from typing import Optional
 from datetime import date, datetime, time
 from decimal import Decimal
 from django.db import transaction
@@ -269,12 +270,51 @@ class BookingService:
 
     @classmethod
     @transaction.atomic
-    def record_payment(cls, booking: Booking, amount: Decimal) -> Booking:
+    def record_payment(
+        cls,
+        booking: Booking,
+        amount: Decimal,
+        payment_account_id: Optional[int] = None,
+        payment_method: Optional[str] = None,
+        user=None
+    ) -> Booking:
         """
-        SSOT function to record a payment towards a booking.
+        SSOT function to record a payment towards a booking and credit the target PaymentAccount.
         """
         if amount <= 0:
             raise ValidationError({'amount': 'Payment amount must be greater than 0.'})
+
+        tenant = booking.tenant
+
+        # Resolve target PaymentAccount
+        account = None
+        if payment_account_id:
+            from apps.accounts.models import PaymentAccount
+            account = PaymentAccount.objects.filter(id=payment_account_id, tenant=tenant, is_active=True).first()
+
+        if not account:
+            from apps.accounts.models import PaymentAccount
+            account = PaymentAccount.objects.filter(tenant=tenant, is_default=True, is_active=True).first()
+
+        if not account:
+            from apps.accounts.models import PaymentAccount
+            account = PaymentAccount.objects.filter(tenant=tenant, is_active=True).first()
+
+        if account:
+            from apps.accounts.services.account_service import AccountService
+            tenant_code = getattr(tenant, 'code', '') or 'RS'
+            inv_no = f"INV-{tenant_code.upper()}-2026-{booking.id:04d}"
+            desc = f"Room Payment for Booking #{booking.id} ({booking.guest_name})"
+            AccountService.record_transaction(
+                tenant=tenant,
+                account=account,
+                transaction_type='INFLOW',
+                amount=amount,
+                source_module='BOOKING',
+                reference_id=inv_no,
+                description=desc,
+                user=user
+            )
 
         booking.paid_amount += amount
         booking.payment_status = cls.calculate_payment_status(booking.paid_amount, booking.total_amount)

@@ -118,3 +118,47 @@ class AccountTransfer(models.Model):
 
     def __str__(self):
         return f"Transfer PKR {self.amount} from {self.from_account.name} to {self.to_account.name}"
+
+
+class PaymentTransaction(models.Model):
+    tenant = models.ForeignKey(
+        'tenants.Tenant',
+        on_delete=models.CASCADE,
+        related_name='payment_transactions'
+    )
+    booking = models.ForeignKey(
+        'bookings.Booking',
+        on_delete=models.CASCADE,
+        related_name='payment_transactions',
+        null=True,
+        blank=True
+    )
+    payment_account = models.ForeignKey(
+        PaymentAccount,
+        on_delete=models.CASCADE,
+        related_name='payment_transactions'
+    )
+    account_head = models.ForeignKey(
+        'expenses.AccountHead',
+        on_delete=models.PROTECT,
+        related_name='payment_transactions',
+        null=True,
+        blank=True
+    )
+    transaction_type = models.CharField(max_length=30, default='REFUND')
+    amount = models.DecimalField(max_digits=14, decimal_places=2)
+    notes = models.TextField(blank=True, default='')
+    created_by = models.ForeignKey(
+        'users.User',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.transaction_type} PKR {self.amount} on {self.payment_account.name} ({self.created_at})"
+

@@ -38,8 +38,14 @@ class AccountHeadViewSet(TenantScopedViewSet):
                 qs = super().get_queryset()
 
         search = self.request.query_params.get('search', '').strip()
+        is_active = self.request.query_params.get('is_active')
         if search:
             qs = qs.filter(Q(name__icontains=search) | Q(description__icontains=search))
+        if is_active is not None:
+            if is_active.lower() == 'true':
+                qs = qs.filter(is_active=True)
+            elif is_active.lower() == 'false':
+                qs = qs.filter(is_active=False)
 
         return qs.annotate(
             expenses_count=Count('expenses'),
