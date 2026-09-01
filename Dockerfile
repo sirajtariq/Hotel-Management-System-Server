@@ -23,8 +23,10 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 COPY pyproject.toml uv.lock* requirements.txt* ./
 
 # Install dependencies using uv
-RUN if [ -f uv.lock ] || [ -f pyproject.toml ]; then \
-        uv sync --frozen --no-cache || uv sync --no-cache; \
+RUN if [ -f uv.lock ]; then \
+        uv sync --frozen --no-install-project --no-cache; \
+    elif [ -f pyproject.toml ]; then \
+        uv sync --no-install-project --no-cache; \
     elif [ -f requirements.txt ]; then \
         uv pip install --system --no-cache -r requirements.txt; \
     fi
