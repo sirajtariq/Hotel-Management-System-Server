@@ -1,5 +1,5 @@
 from django.core.exceptions import ValidationError as DjangoValidationError
-from django.db import IntegrityError
+from django.db import IntegrityError, OperationalError, DatabaseError
 from rest_framework.views import exception_handler
 from rest_framework.response import Response
 from rest_framework import status
@@ -25,6 +25,12 @@ def custom_exception_handler(exc, context):
             exc = DRFValidationError({'detail': 'A record with these unique details already exists for this tenant/property.'})
         else:
             exc = DRFValidationError({'detail': 'Database constraint failure.'})
+    elif isinstance(exc, (OperationalError, DatabaseError)):
+        msg_str = str(exc)
+        if 'getaddrinfo failed' in msg_str.lower() or 'could not connect' in msg_str.lower() or 'resolve host' in msg_str.lower():
+            exc = DRFValidationError({'detail': 'Database connection error: DNS host resolution failed. Please check internet connection or retry.'})
+        else:
+            exc = DRFValidationError({'detail': 'Database connection error. Please try again.'})
 
     response = exception_handler(exc, context)
 

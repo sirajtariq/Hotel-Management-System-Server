@@ -48,6 +48,15 @@ class User(AbstractUser):
         related_name='users'
     )
     phone_number = models.CharField(max_length=50, blank=True, null=True)
+    assigned_properties = models.ManyToManyField(
+        'properties.Property',
+        blank=True,
+        related_name='assigned_users'
+    )
+
+    @property
+    def is_tenant_admin(self) -> bool:
+        return self.is_superuser or self.role in ['SUPERADMIN', 'TENANT_ADMIN']
 
     class Meta:
         db_table = 'users'

@@ -1,16 +1,104 @@
 from datetime import datetime
+from decimal import Decimal
+from django.db.models import Count, Sum, Value, Q
+from django.db.models.functions import Coalesce
 from django.http import HttpResponse
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from core.viewsets import TenantScopedViewSet
-from apps.expenses.models import Expense, ExpenseCategory
-from apps.expenses.serializers import ExpenseSerializer, ExpenseCategorySerializer
+from apps.expenses.models import Expense, AccountHead, ExpenseCategory
+from apps.expenses.serializers import ExpenseSerializer, AccountHeadSerializer, ExpenseCategorySerializer
 from apps.expenses.services.expense_service import ExpenseService
 from core.permissions import HasTenantAccess, HasModulePermission
 
+class AccountHeadViewSet(TenantScopedViewSet):
+    queryset = AccountHead.objects.all()
+    serializer_class = AccountHeadSerializer
+    permission_classes = [IsAuthenticated, HasTenantAccess, HasModulePermission]
+    action_permissions = {
+        'list': 'expenses:view',
+        'retrieve': 'expenses:view',
+        'create': 'expenses:create',
+        'update': 'expenses:create',
+        'partial_update': 'expenses:create',
+        'destroy': 'expenses:delete',
+        'toggle_active': 'expenses:create',
+    }
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        user = self.request.user
+
+        # Auto-seed default heads for tenant if they don't exist yet
+        if user and user.is_authenticated and getattr(user, 'tenant', None):
+            if not AccountHead.objects.filter(tenant=user.tenant).exists():
+                ExpenseService.auto_seed_default_account_heads(user.tenant)
+                qs = super().get_queryset()
+
+        search = self.request.query_params.get('search', '').strip()
+        is_active = self.request.query_params.get('is_active')
+        if search:
+            qs = qs.filter(Q(name__icontains=search) | Q(description__icontains=search))
+        if is_active is not None:
+            if is_active.lower() == 'true':
+                qs = qs.filter(is_active=True)
+            elif is_active.lower() == 'false':
+                qs = qs.filter(is_active=False)
+
+        return qs.annotate(
+            expenses_count=Count('expenses'),
+            total_spent_amount=Coalesce(Sum('expenses__amount'), Value(Decimal('0.00')))
+        ).order_by('name')
+
+    def perform_create(self, serializer):
+        tenant = getattr(self.request.user, 'tenant', None)
+        if not tenant and hasattr(self.request.user, 'tenant_id') and self.request.user.tenant_id:
+            from apps.tenants.models import Tenant
+            tenant = Tenant.objects.filter(id=self.request.user.tenant_id).first()
+
+        if not tenant:
+            from rest_framework import serializers as drf_serializers
+            raise drf_serializers.ValidationError({"tenant": "Authenticated user is not linked to any active tenant."})
+
+        serializer.save(tenant=tenant)
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        tenant = getattr(request.user, 'tenant', None)
+        if not tenant and hasattr(request.user, 'tenant_id') and request.user.tenant_id:
+            from apps.tenants.models import Tenant
+            tenant = Tenant.objects.filter(id=request.user.tenant_id).first()
+
+        if request.user.is_superuser or getattr(request.user, 'role', '') == 'SUPERADMIN':
+            tenant = serializer.validated_data.get('tenant', tenant)
+
+        if not tenant:
+            from rest_framework import serializers as drf_serializers
+            raise drf_serializers.ValidationError({"tenant": "Authenticated user is not linked to any active tenant."})
+
+        head = ExpenseService.create_account_head(
+            tenant=tenant,
+            name=serializer.validated_data['name'],
+            description=serializer.validated_data.get('description', '')
+        )
+        response_serializer = self.get_serializer(head)
+        return Response(response_serializer.data, status=status.HTTP_201_CREATED)
+
+    @action(detail=True, methods=['post'], url_path='toggle-active')
+    def toggle_active(self, request, pk=None):
+        head = self.get_object()
+        head.is_active = not head.is_active
+        head.save(update_fields=['is_active'])
+        serializer = self.get_serializer(head)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
 class ExpenseCategoryViewSet(TenantScopedViewSet):
+    """Legacy Category ViewSet kept for backward compatibility."""
     queryset = ExpenseCategory.objects.all()
     serializer_class = ExpenseCategorySerializer
     permission_classes = [IsAuthenticated, HasTenantAccess, HasModulePermission]
@@ -23,13 +111,33 @@ class ExpenseCategoryViewSet(TenantScopedViewSet):
         'destroy': 'expenses:delete',
     }
 
+    def perform_create(self, serializer):
+        tenant = getattr(self.request.user, 'tenant', None)
+        if not tenant and hasattr(self.request.user, 'tenant_id') and self.request.user.tenant_id:
+            from apps.tenants.models import Tenant
+            tenant = Tenant.objects.filter(id=self.request.user.tenant_id).first()
+
+        if not tenant:
+            from rest_framework import serializers as drf_serializers
+            raise drf_serializers.ValidationError({"tenant": "Authenticated user is not linked to any active tenant."})
+
+        serializer.save(tenant=tenant)
+
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        tenant = request.user.tenant
+        tenant = getattr(request.user, 'tenant', None)
+        if not tenant and hasattr(request.user, 'tenant_id') and request.user.tenant_id:
+            from apps.tenants.models import Tenant
+            tenant = Tenant.objects.filter(id=request.user.tenant_id).first()
+
         if request.user.is_superuser or getattr(request.user, 'role', '') == 'SUPERADMIN':
             tenant = serializer.validated_data.get('tenant', tenant)
+
+        if not tenant:
+            from rest_framework import serializers as drf_serializers
+            raise drf_serializers.ValidationError({"tenant": "Authenticated user is not linked to any active tenant."})
 
         category = ExpenseService.create_category(
             tenant=tenant,
@@ -37,6 +145,7 @@ class ExpenseCategoryViewSet(TenantScopedViewSet):
         )
         response_serializer = self.get_serializer(category)
         return Response(response_serializer.data, status=status.HTTP_201_CREATED)
+
 
 class ExpenseViewSet(TenantScopedViewSet):
     queryset = Expense.objects.all()
@@ -54,25 +163,76 @@ class ExpenseViewSet(TenantScopedViewSet):
 
     def get_queryset(self):
         qs = super().get_queryset()
-        return qs.select_related('property', 'category', 'tenant')
+        qs = qs.select_related('property', 'account_head', 'category', 'tenant', 'created_by')
+
+        account_head_id = self.request.query_params.get('account_head_id')
+        payment_method = self.request.query_params.get('payment_method')
+        property_id = self.request.query_params.get('property_id')
+        start_date = self.request.query_params.get('start_date')
+        end_date = self.request.query_params.get('end_date')
+        search = self.request.query_params.get('search', '').strip()
+
+        if account_head_id:
+            qs = qs.filter(account_head_id=account_head_id)
+        if payment_method:
+            qs = qs.filter(payment_method=payment_method)
+        if property_id:
+            qs = qs.filter(property_id=property_id)
+        if start_date:
+            qs = qs.filter(expense_date__gte=start_date)
+        if end_date:
+            qs = qs.filter(expense_date__lte=end_date)
+        if search:
+            qs = qs.filter(
+                Q(vendor_name__icontains=search) |
+                Q(item_name__icontains=search) |
+                Q(description__icontains=search) |
+                Q(receipt_number__icontains=search) |
+                Q(account_head__name__icontains=search)
+            )
+
+        return qs
+
+    def perform_create(self, serializer):
+        tenant = getattr(self.request.user, 'tenant', None)
+        if not tenant and hasattr(self.request.user, 'tenant_id') and self.request.user.tenant_id:
+            from apps.tenants.models import Tenant
+            tenant = Tenant.objects.filter(id=self.request.user.tenant_id).first()
+
+        if not tenant:
+            from rest_framework import serializers as drf_serializers
+            raise drf_serializers.ValidationError({"tenant": "Authenticated user is not linked to any active tenant."})
+
+        serializer.save(tenant=tenant)
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        tenant = request.user.tenant
+        tenant = getattr(request.user, 'tenant', None)
+        if not tenant and hasattr(request.user, 'tenant_id') and request.user.tenant_id:
+            from apps.tenants.models import Tenant
+            tenant = Tenant.objects.filter(id=request.user.tenant_id).first()
+
         if request.user.is_superuser or getattr(request.user, 'role', '') == 'SUPERADMIN':
             tenant = serializer.validated_data.get('tenant', tenant)
+
+        if not tenant:
+            from rest_framework import serializers as drf_serializers
+            raise drf_serializers.ValidationError({"tenant": "Authenticated user is not linked to any active tenant."})
 
         data = serializer.validated_data
         expense = ExpenseService.create_expense(
             tenant=tenant,
             property_obj=data['property'],
-            category=data['category'],
-            item_name=data['item_name'],
+            account_head=data.get('account_head'),
+            category=data.get('category'),
+            item_name=data.get('item_name', ''),
             amount=data['amount'],
-            expense_date=data['expense_date'],
+            expense_date=data.get('expense_date'),
+            payment_method=data.get('payment_method', 'CASH'),
             vendor_name=data.get('vendor_name', ''),
+            receipt_number=data.get('receipt_number', ''),
             description=data.get('description', ''),
             created_by=request.user
         )
@@ -87,7 +247,8 @@ class ExpenseViewSet(TenantScopedViewSet):
             tenant_id = int(request.query_params.get('tenant_id'))
 
         property_id = request.query_params.get('property_id')
-        category_id = request.query_params.get('category_id')
+        account_head_id = request.query_params.get('account_head_id')
+        payment_method = request.query_params.get('payment_method')
         start_date = request.query_params.get('start_date')
         end_date = request.query_params.get('end_date')
 
@@ -96,7 +257,8 @@ class ExpenseViewSet(TenantScopedViewSet):
             property_id=int(property_id) if property_id else None,
             start_date=start_date,
             end_date=end_date,
-            category_id=int(category_id) if category_id else None
+            account_head_id=int(account_head_id) if account_head_id else None,
+            payment_method=payment_method
         )
 
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")

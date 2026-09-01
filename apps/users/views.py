@@ -1,18 +1,21 @@
 from django.db.models import Count
 from rest_framework import status, permissions
-from rest_framework.decorators import action
+from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework_simplejwt.views import TokenObtainPairView
 from core.viewsets import TenantScopedViewSet
 from apps.users.models import User, Role
 from apps.users.serializers import (
     UserSerializer,
+    UserSessionSerializer,
     UserCreateSerializer,
     CustomTokenObtainPairSerializer,
     UserProfileSerializer,
     ChangePasswordSerializer,
     AdminResetPasswordSerializer,
     RoleSerializer,
+    SuperAdminUserListSerializer,
+    SuperAdminUserDetailSerializer,
 )
 from apps.users.services.user_service import UserService
 from apps.users.services.role_service import RoleService
@@ -22,25 +25,50 @@ from core.permissions_registry import PERMISSIONS_CATALOG
 class CustomTokenObtainPairView(TokenObtainPairView):
     serializer_class = CustomTokenObtainPairSerializer
 
+    def post(self, request, *args, **kwargs):
+        response = super().post(request, *args, **kwargs)
+        if response.status_code == 200:
+            user = None
+            username_or_email = request.data.get('username') or request.data.get('email')
+            if username_or_email:
+                user = User.objects.select_related('tenant', 'custom_role').prefetch_related('assigned_properties').filter(
+                    username__iexact=username_or_email
+                ).first() or User.objects.select_related('tenant', 'custom_role').prefetch_related('assigned_properties').filter(
+                    email__iexact=username_or_email
+                ).first()
+            if user:
+                response.data['user'] = UserSessionSerializer(user).data
+        return response
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def get_current_user_session(request):
+    user = User.objects.select_related('tenant', 'custom_role').prefetch_related('assigned_properties').get(id=request.user.id)
+    serializer = UserSessionSerializer(user)
+    return Response(serializer.data)
+
 class UserViewSet(TenantScopedViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
 
     def get_queryset(self):
         qs = super().get_queryset()
-        return qs.select_related('custom_role', 'tenant')
+        return qs.select_related('custom_role', 'tenant').prefetch_related('assigned_properties').order_by('-date_joined')
 
     def get_serializer_class(self):
-
         if self.action == 'create':
             return UserCreateSerializer
+        if self.action == 'list':
+            return SuperAdminUserListSerializer
+        if self.action == 'retrieve':
+            return SuperAdminUserDetailSerializer
         return UserSerializer
 
     def get_permissions(self):
         if self.action in ['create']:
             # Anyone can register or TenantAdmin creates user
             return [permissions.AllowAny()]
-        if self.action in ['me', 'change_password']:
+        if self.action in ['me', 'change_password', 'toggle_active', 'reset_password']:
             return [permissions.IsAuthenticated()]
         return [IsTenantAdmin()]
 
@@ -110,6 +138,14 @@ class UserViewSet(TenantScopedViewSet):
         Allows SuperAdmin or TenantAdmin to reset ANOTHER user's password via UserService.
         """
         target_user = self.get_object()
+        new_password = request.data.get('newPassword') or request.data.get('new_password')
+        if new_password:
+            if len(new_password) < 6:
+                return Response({'detail': 'Password must be at least 6 characters.'}, status=status.HTTP_400_BAD_REQUEST)
+            target_user.set_password(new_password)
+            target_user.save(update_fields=['password'])
+            return Response({'detail': f'Password for {target_user.username} successfully updated.'}, status=status.HTTP_200_OK)
+
         serializer = AdminResetPasswordSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
@@ -123,6 +159,22 @@ class UserViewSet(TenantScopedViewSet):
             {'detail': f'Password for user "{target_user.username}" reset successfully.'},
             status=status.HTTP_200_OK
         )
+
+    @action(detail=True, methods=['post'], permission_classes=[permissions.IsAuthenticated], url_path='toggle-active')
+    def toggle_active(self, request, pk=None):
+        """
+        Toggles user active state (Active <-> Disabled).
+        """
+        user = self.get_object()
+        if user.is_superuser and user == request.user:
+            return Response({'detail': 'You cannot deactivate your own superadmin account.'}, status=status.HTTP_400_BAD_REQUEST)
+        user.is_active = not user.is_active
+        user.save(update_fields=['is_active'])
+        return Response({
+            'isActive': user.is_active,
+            'is_active': user.is_active,
+            'detail': f"User status set to {'Active' if user.is_active else 'Disabled'}."
+        }, status=status.HTTP_200_OK)
 
 
 class RoleViewSet(TenantScopedViewSet):
@@ -150,13 +202,33 @@ class RoleViewSet(TenantScopedViewSet):
         """
         return Response(PERMISSIONS_CATALOG, status=status.HTTP_200_OK)
 
+    def perform_create(self, serializer):
+        tenant = getattr(self.request.user, 'tenant', None)
+        if not tenant and hasattr(self.request.user, 'tenant_id') and self.request.user.tenant_id:
+            from apps.tenants.models import Tenant
+            tenant = Tenant.objects.filter(id=self.request.user.tenant_id).first()
+
+        if not tenant:
+            from rest_framework import serializers as drf_serializers
+            raise drf_serializers.ValidationError({"tenant": "Authenticated user is not linked to any active tenant."})
+
+        serializer.save(tenant=tenant)
+
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        tenant = request.user.tenant
+        tenant = getattr(request.user, 'tenant', None)
+        if not tenant and hasattr(request.user, 'tenant_id') and request.user.tenant_id:
+            from apps.tenants.models import Tenant
+            tenant = Tenant.objects.filter(id=request.user.tenant_id).first()
+
         if request.user.is_superuser or getattr(request.user, 'role', '') == 'SUPERADMIN':
             tenant = serializer.validated_data.get('tenant', tenant)
+
+        if not tenant:
+            from rest_framework import serializers as drf_serializers
+            raise drf_serializers.ValidationError({"tenant": "Authenticated user is not linked to any active tenant."})
 
         role = RoleService.create_role(
             tenant=tenant,

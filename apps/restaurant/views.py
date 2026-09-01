@@ -37,6 +37,9 @@ class CategoryViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         tenant = getattr(self.request.user, 'tenant', None)
+        if not tenant and hasattr(self.request.user, 'tenant_id') and self.request.user.tenant_id:
+            from apps.tenants.models import Tenant
+            tenant = Tenant.objects.filter(id=self.request.user.tenant_id).first()
         if not tenant:
             raise ValidationError({'tenant': 'User is not assigned to any tenant.'})
         serializer.save(tenant=tenant)
@@ -81,6 +84,9 @@ class MenuItemViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         tenant = getattr(self.request.user, 'tenant', None)
+        if not tenant and hasattr(self.request.user, 'tenant_id') and self.request.user.tenant_id:
+            from apps.tenants.models import Tenant
+            tenant = Tenant.objects.filter(id=self.request.user.tenant_id).first()
         if not tenant:
             raise ValidationError({'tenant': 'User is not assigned to any tenant.'})
         serializer.save(tenant=tenant)
@@ -127,6 +133,9 @@ class DiningTableViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         tenant = getattr(self.request.user, 'tenant', None)
+        if not tenant and hasattr(self.request.user, 'tenant_id') and self.request.user.tenant_id:
+            from apps.tenants.models import Tenant
+            tenant = Tenant.objects.filter(id=self.request.user.tenant_id).first()
         if not tenant:
             raise ValidationError({'tenant': 'User is not assigned to any tenant.'})
 
@@ -235,6 +244,9 @@ class RestaurantOrderViewSet(viewsets.ModelViewSet):
         data = serializer.validated_data
 
         tenant = getattr(request.user, 'tenant', None)
+        if not tenant and hasattr(request.user, 'tenant_id') and request.user.tenant_id:
+            from apps.tenants.models import Tenant
+            tenant = Tenant.objects.filter(id=request.user.tenant_id).first()
         if not tenant:
             raise ValidationError({'tenant': 'User is not assigned to any tenant.'})
 

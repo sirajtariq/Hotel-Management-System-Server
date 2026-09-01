@@ -57,6 +57,8 @@ class Booking(models.Model):
     tax_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
     total_amount = models.DecimalField(max_digits=12, decimal_places=2)
     paid_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0.0)
+    total_refunded = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
+    booking_reference = models.CharField(max_length=50, blank=True, null=True, db_index=True)
     payment_status = models.CharField(max_length=20, choices=PAYMENT_STATUS_CHOICES, default='UNPAID', db_index=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDING', db_index=True)
 
@@ -67,7 +69,9 @@ class Booking(models.Model):
         db_table = 'bookings'
         ordering = ['-created_at']
         indexes = [
-            models.Index(fields=['tenant', 'property', 'status']),
+            models.Index(fields=['tenant', 'property', 'status'], name='idx_bk_tenant_prop_stat'),
+            models.Index(fields=['tenant', 'check_in_date', 'check_out_date'], name='idx_bk_tenant_dates'),
+            models.Index(fields=['tenant', 'booking_reference'], name='idx_bk_tenant_ref'),
             models.Index(fields=['tenant', 'status', 'check_in_date']),
             models.Index(fields=['room', 'check_in_date', 'check_out_date']),
             models.Index(fields=['payment_status']),

@@ -1,3 +1,4 @@
+from typing import Optional
 from datetime import date, datetime, time
 from decimal import Decimal
 from django.db import transaction
@@ -11,8 +12,8 @@ from apps.properties.models import Property
 
 def check_room_availability(room, check_in_dt, check_out_dt, exclude_booking_id=None):
     if check_out_dt <= check_in_dt:
-        raise ValidationError("Check-out time must be strictly after check-in time.")
-    
+        raise ValidationError({"check_out": "Check-out time must be strictly after check-in time."})
+
     conflicts = Booking.objects.filter(
         tenant=room.tenant,
         room=room,
@@ -23,14 +24,14 @@ def check_room_availability(room, check_in_dt, check_out_dt, exclude_booking_id=
     )
     if exclude_booking_id:
         conflicts = conflicts.exclude(id=exclude_booking_id)
-        
+
     if conflicts.exists():
         c = conflicts.first()
         start_str = c.check_in.strftime('%d-%b %I:%M %p') if c.check_in else str(c.check_in_date)
         end_str = c.check_out.strftime('%d-%b %I:%M %p') if c.check_out else str(c.check_out_date)
-        raise ValidationError(
-            f"Room {room.room_number} is already occupied from {start_str} to {end_str}."
-        )
+        raise ValidationError({
+            "room": f"Room {room.room_number} is already booked for the selected date range ({start_str} to {end_str})."
+        })
 
 class BookingService:
     @staticmethod
@@ -100,14 +101,25 @@ class BookingService:
             check_out_dt = datetime.combine(check_out_date, time(12, 0))
 
         if not check_in_dt or not check_out_dt:
-            raise ValidationError("Check-in and check-out date/time are required.")
+            raise ValidationError({"check_in": "Check-in and check-out date/time are required."})
 
         if timezone.is_naive(check_in_dt):
             check_in_dt = timezone.make_aware(check_in_dt)
         if timezone.is_naive(check_out_dt):
             check_out_dt = timezone.make_aware(check_out_dt)
 
-        check_room_availability(room, check_in_dt, check_out_dt)
+        # 1. Lock the room row exclusively for the duration of this transaction
+        try:
+            locked_room = (
+                Room.objects.select_for_update()
+                .select_related('property', 'room_type')
+                .get(id=room.id, tenant=tenant)
+            )
+        except Room.DoesNotExist:
+            raise ValidationError({"room": "Selected room does not exist or is not assigned to this property."})
+
+        check_room_availability(locked_room, check_in_dt, check_out_dt)
+        room = locked_room
 
         check_in_d = check_in_dt.date()
         check_out_d = check_out_dt.date()
@@ -157,6 +169,10 @@ class BookingService:
 
         payment_status = cls.calculate_payment_status(paid_amount, total_amount)
 
+        booking_status = 'RESERVED'
+        if paid_amount >= total_amount and total_amount > 0:
+            booking_status = 'CONFIRMED'
+
         booking = Booking.objects.create(
             tenant=tenant,
             property=room.property,
@@ -182,8 +198,16 @@ class BookingService:
             total_amount=total_amount,
             paid_amount=paid_amount,
             payment_status=payment_status,
-            status='PENDING'
+            status=booking_status
         )
+
+        now = timezone.now()
+        if check_in_dt <= now and check_out_dt > now:
+            room.status = 'OCCUPIED'
+        else:
+            room.status = 'RESERVED'
+        room.save(update_fields=['status', 'updated_at'])
+
         return booking
 
     @classmethod
@@ -220,10 +244,11 @@ class BookingService:
         booking.status = 'CHECKED_OUT'
         booking.save(update_fields=['status', 'updated_at'])
 
-        # Update room status to CLEANING
+        # Update room status to AVAILABLE and housekeeping_status to DIRTY
         room = booking.room
-        room.status = 'CLEANING'
-        room.save(update_fields=['status', 'updated_at'])
+        room.status = 'AVAILABLE'
+        room.housekeeping_status = 'DIRTY'
+        room.save(update_fields=['status', 'housekeeping_status', 'updated_at'])
 
         return booking
 
@@ -236,8 +261,8 @@ class BookingService:
         booking.status = 'CANCELLED'
         booking.save(update_fields=['status', 'updated_at'])
 
-        # Free room if checked in
-        if booking.room.status == 'OCCUPIED':
+        # Free room if reserved or occupied
+        if booking.room.status in ['OCCUPIED', 'RESERVED']:
             booking.room.status = 'AVAILABLE'
             booking.room.save(update_fields=['status', 'updated_at'])
 
@@ -245,14 +270,79 @@ class BookingService:
 
     @classmethod
     @transaction.atomic
-    def record_payment(cls, booking: Booking, amount: Decimal) -> Booking:
+    def record_payment(
+        cls,
+        booking: Booking,
+        amount: Decimal,
+        payment_account_id: Optional[int] = None,
+        payment_method: Optional[str] = None,
+        user=None
+    ) -> Booking:
         """
-        SSOT function to record a payment towards a booking.
+        SSOT function to record a payment towards a booking and credit the target PaymentAccount.
         """
         if amount <= 0:
             raise ValidationError({'amount': 'Payment amount must be greater than 0.'})
+
+        tenant = booking.tenant
+
+        # Resolve target PaymentAccount
+        account = None
+        if payment_account_id:
+            from apps.accounts.models import PaymentAccount
+            account = PaymentAccount.objects.filter(id=payment_account_id, tenant=tenant, is_active=True).first()
+
+        if not account:
+            from apps.accounts.models import PaymentAccount
+            account = PaymentAccount.objects.filter(tenant=tenant, is_default=True, is_active=True).first()
+
+        if not account:
+            from apps.accounts.models import PaymentAccount
+            account = PaymentAccount.objects.filter(tenant=tenant, is_active=True).first()
+
+        if account:
+            from apps.accounts.services.account_service import AccountService
+            tenant_code = getattr(tenant, 'code', '') or 'RS'
+            inv_no = f"INV-{tenant_code.upper()}-2026-{booking.id:04d}"
+            desc = f"Room Payment for Booking #{booking.id} ({booking.guest_name})"
+            AccountService.record_transaction(
+                tenant=tenant,
+                account=account,
+                transaction_type='INFLOW',
+                amount=amount,
+                source_module='BOOKING',
+                reference_id=inv_no,
+                description=desc,
+                user=user
+            )
 
         booking.paid_amount += amount
         booking.payment_status = cls.calculate_payment_status(booking.paid_amount, booking.total_amount)
         booking.save(update_fields=['paid_amount', 'payment_status', 'updated_at'])
         return booking
+
+def create_booking_with_lock(*, tenant_id, property_id, room_id, guest_name='', guest_phone='', check_in_date=None, check_out_date=None, **booking_kwargs):
+    """
+    Acquires an exclusive row-level lock on the Room record to prevent
+    simultaneous overlapping reservations (double booking).
+    """
+    with transaction.atomic():
+        try:
+            room = (
+                Room.objects.select_for_update()
+                .select_related('property', 'room_type')
+                .get(id=room_id, tenant_id=tenant_id, property_id=property_id)
+            )
+        except Room.DoesNotExist:
+            raise ValidationError({"room": "Selected room does not exist or is not assigned to this property."})
+
+        tenant = room.tenant
+        return BookingService.create_booking(
+            tenant=tenant,
+            room=room,
+            guest_name=guest_name,
+            guest_phone=guest_phone,
+            check_in_date=check_in_date,
+            check_out_date=check_out_date,
+            **booking_kwargs
+        )
