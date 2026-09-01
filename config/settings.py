@@ -16,6 +16,7 @@ env = environ.Env(
     SECRET_KEY=(str, 'django-insecure-change-this-in-production-hotel-management-secret-key'),
     ALLOWED_HOSTS=(list, ['*']),
     CORS_ALLOWED_ORIGINS=(list, ['http://localhost:5173', 'http://localhost:8000', 'http://127.0.0.1:5173']),
+    CSRF_TRUSTED_ORIGINS=(list, ['https://hotel-management-system-client.vercel.app']),
     ACCESS_TOKEN_LIFETIME_MINUTES=(int, 60),
     REFRESH_TOKEN_LIFETIME_DAYS=(int, 1),
 )
@@ -65,6 +66,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',  # Production static files serving
     'django.middleware.gzip.GZipMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -116,37 +118,36 @@ CACHES = {
     }
 }
 
-
-
-
 AUTH_USER_MODEL = 'users.User'
 
-# Password validation (Disabled per user request for flexible password creation)
 AUTH_PASSWORD_VALIDATORS = []
-
 
 LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'UTC'
 USE_I18N = True
 USE_TZ = True
 
+# Static & Media Files Settings (FIXED)
 STATIC_URL = '/static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
+
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # REST Framework settings
 REST_FRAMEWORK = {
-    # 1. Incoming JSON & Multipart Parsers
     'DEFAULT_PARSER_CLASSES': (
         'djangorestframework_camel_case.parser.CamelCaseJSONParser',
         'djangorestframework_camel_case.parser.CamelCaseFormParser',
         'djangorestframework_camel_case.parser.CamelCaseMultiPartParser',
     ),
-    # 2. Outgoing Renderers
     'DEFAULT_RENDERER_CLASSES': (
         'djangorestframework_camel_case.render.CamelCaseJSONRenderer',
         'djangorestframework_camel_case.render.CamelCaseBrowsableAPIRenderer',
     ),
-    # Maintain existing Authentication & Permissions
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'core.authentication.CustomJWTAuthentication',
     ),
@@ -158,7 +159,6 @@ REST_FRAMEWORK = {
     'EXCEPTION_HANDLER': 'core.exceptions.custom_exception_handler',
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
 }
-
 
 # Simple JWT configuration
 SIMPLE_JWT = {
@@ -181,13 +181,15 @@ SPECTACULAR_SETTINGS = {
     'COMPONENT_SPLIT_REQUEST': True,
 }
 
-# CORS configuration
+# CORS & CSRF configuration
 CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_CREDENTIALS = True
+CSRF_TRUSTED_ORIGINS = env.list('CSRF_TRUSTED_ORIGINS', default=[
+    'https://hotel-management-system-client.vercel.app',
+])
 
 from corsheaders.defaults import default_headers
 
 CORS_ALLOW_HEADERS = list(default_headers) + [
     'x-tenant-id',
 ]
-
