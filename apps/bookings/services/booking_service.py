@@ -90,10 +90,12 @@ class BookingService:
         tax_amount: Decimal = None,
         total_amount: Decimal = None,
         paid_amount: Decimal = Decimal('0.0'),
-        total_duration: str = ''
+        total_duration: str = '',
+        commission_recipient=None,
+        commission_amount: Decimal = Decimal('0.00')
     ) -> Booking:
         """
-        SSOT function to create a new booking supporting NIGHTLY and HOURLY modes with manual Tax % and Discount.
+        SSOT function to create a new booking supporting NIGHTLY and HOURLY modes with manual Tax %, Discount, and Commission recipient tracking.
         """
         if not check_in_dt and check_in_date:
             check_in_dt = datetime.combine(check_in_date, time(14, 0))
@@ -149,13 +151,18 @@ class BookingService:
                 discount_amount = round(Decimal(subtotal_amount) * (Decimal(discount_value) / Decimal('100.0')), 2)
         else:
             if discount_amount is None and discount_value is not None:
-                discount_amount = min(Decimal(subtotal_amount), Decimal(discount_value))
+                discount_amount = Decimal(discount_value)
 
         if discount_amount is None:
             discount_amount = Decimal('0.00')
         if discount_value is None:
             discount_value = Decimal('0.00')
 
+        # Enforce rule: Discount cannot exceed Gross Room Total (subtotal_amount)
+        if Decimal(discount_amount) > Decimal(subtotal_amount):
+            raise ValidationError({"discount_amount": f"Discount amount (PKR {discount_amount}) cannot exceed Gross Room Total (PKR {subtotal_amount})."})
+
+        discount_amount = min(Decimal(subtotal_amount), Decimal(discount_amount))
         net_subtotal = max(Decimal('0.00'), Decimal(subtotal_amount) - Decimal(discount_amount))
 
         if tax_rate is None:
@@ -172,6 +179,9 @@ class BookingService:
         booking_status = 'RESERVED'
         if paid_amount >= total_amount and total_amount > 0:
             booking_status = 'CONFIRMED'
+
+        if commission_amount is None:
+            commission_amount = Decimal('0.00')
 
         booking = Booking.objects.create(
             tenant=tenant,
@@ -197,6 +207,8 @@ class BookingService:
             tax_amount=tax_amount,
             total_amount=total_amount,
             paid_amount=paid_amount,
+            commission_recipient=commission_recipient,
+            commission_amount=Decimal(commission_amount),
             payment_status=payment_status,
             status=booking_status
         )
@@ -238,8 +250,8 @@ class BookingService:
     @classmethod
     @transaction.atomic
     def check_out(cls, booking: Booking) -> Booking:
-        if booking.status != 'CHECKED_IN':
-            raise ValidationError({'status': 'Only checked-in bookings can be checked out.'})
+        if booking.status in ['CANCELLED', 'CHECKED_OUT']:
+            raise ValidationError({'status': f'Cannot check out a booking in state {booking.status}.'})
 
         booking.status = 'CHECKED_OUT'
         booking.save(update_fields=['status', 'updated_at'])

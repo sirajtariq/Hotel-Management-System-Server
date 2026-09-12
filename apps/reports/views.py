@@ -115,7 +115,7 @@ class OccupancyReportView(APIView):
 
 class DashboardAnalyticsView(APIView):
     permission_classes = [IsAuthenticated, HasTenantAccess, HasModulePermission]
-    required_permission = 'reports:view_pnl'
+    required_permission = 'dashboard:view'
 
     @extend_schema(
         parameters=[DashboardAnalyticsQuerySerializer],

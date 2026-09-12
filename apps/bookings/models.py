@@ -61,6 +61,16 @@ class Booking(models.Model):
     booking_reference = models.CharField(max_length=50, blank=True, null=True, db_index=True)
     payment_status = models.CharField(max_length=20, choices=PAYMENT_STATUS_CHOICES, default='UNPAID', db_index=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDING', db_index=True)
+    extra_charges = models.JSONField(default=list, blank=True, help_text="List of extra charges dictionaries, e.g., [{'name': 'Laundry', 'amount': 500}]")
+
+    commission_recipient = models.ForeignKey(
+        'staff.StaffProfile',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='commission_bookings'
+    )
+    commission_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

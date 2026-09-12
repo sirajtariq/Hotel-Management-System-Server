@@ -12,11 +12,16 @@ class BookingListSerializer(serializers.ModelSerializer):
     invoice_number = serializers.SerializerMethodField()
     remaining_balance = serializers.SerializerMethodField()
     total_refunded = serializers.DecimalField(max_digits=12, decimal_places=2, read_only=True)
+    property_address = serializers.CharField(source='property.address', read_only=True, default='')
+    property_city = serializers.CharField(source='property.city', read_only=True, default='')
+    property_phone = serializers.CharField(source='property.phone', read_only=True, default='')
+    property_email = serializers.CharField(source='property.email', read_only=True, default='')
 
     class Meta:
         model = Booking
         fields = [
             'id',
+            'room',
             'invoice_number',
             'property_name',
             'room_number',
@@ -30,6 +35,14 @@ class BookingListSerializer(serializers.ModelSerializer):
             'check_in_date',
             'check_out_date',
             'total_duration',
+            'nightly_rate',
+            'rate_applied',
+            'discount_type',
+            'discount_value',
+            'discount_amount',
+            'tax_rate',
+            'tax_amount',
+            'subtotal_amount',
             'total_amount',
             'paid_amount',
             'total_refunded',
@@ -37,6 +50,11 @@ class BookingListSerializer(serializers.ModelSerializer):
             'payment_status',
             'status',
             'created_at',
+            'extra_charges',
+            'property_address',
+            'property_city',
+            'property_phone',
+            'property_email',
         ]
 
     def get_invoice_number(self, obj) -> str:
@@ -82,6 +100,8 @@ class BookingDetailSerializer(serializers.ModelSerializer):
 
     room_stay_charges = serializers.SerializerMethodField()
     total_folio_bill = serializers.SerializerMethodField()
+    commission_recipient_name = serializers.SerializerMethodField()
+    commission_amount = serializers.DecimalField(max_digits=12, decimal_places=2, required=False, default=Decimal('0.00'))
     gross_paid = serializers.SerializerMethodField()
     net_paid = serializers.SerializerMethodField()
     balance_due = serializers.SerializerMethodField()
@@ -121,6 +141,9 @@ class BookingDetailSerializer(serializers.ModelSerializer):
             'tax_amount',
             'total_amount',
             'paid_amount',
+            'commission_recipient',
+            'commission_recipient_name',
+            'commission_amount',
             'total_refunded',
             'totalRefunded',
             'remaining_balance',
@@ -135,6 +158,7 @@ class BookingDetailSerializer(serializers.ModelSerializer):
             'gross_paid',
             'net_paid',
             'balance_due',
+            'extra_charges',
             'created_at',
             'updated_at',
         ]
@@ -143,6 +167,11 @@ class BookingDetailSerializer(serializers.ModelSerializer):
             'payment_status', 'status',
             'created_at', 'updated_at'
         ]
+
+    def get_commission_recipient_name(self, obj) -> str:
+        if obj.commission_recipient:
+            return obj.commission_recipient.name
+        return ""
 
     def get_property_data(self, obj):
         p = obj.property
@@ -222,16 +251,28 @@ class BookingDetailSerializer(serializers.ModelSerializer):
                 data['discount_type'] = data['discountType']
             if 'discountValue' in data and 'discount_value' not in data:
                 data['discount_value'] = data['discountValue']
+            if 'discountAmount' in data and 'discount_amount' not in data:
+                data['discount_amount'] = data['discountAmount']
             if 'taxRate' in data and 'tax_rate' not in data:
                 data['tax_rate'] = data['taxRate']
             if 'totalAmount' in data and 'total_amount' not in data:
                 data['total_amount'] = data['totalAmount']
+            if 'subtotalAmount' in data and 'subtotal_amount' not in data:
+                data['subtotal_amount'] = data['subtotalAmount']
             if 'paidAmount' in data and 'paid_amount' not in data:
                 data['paid_amount'] = data['paidAmount']
             if 'initialPayment' in data and 'paid_amount' not in data:
                 data['paid_amount'] = data['initialPayment']
             if 'totalDuration' in data and 'total_duration' not in data:
                 data['total_duration'] = data['totalDuration']
+            if 'commissionRecipient' in data and 'commission_recipient' not in data:
+                data['commission_recipient'] = data['commissionRecipient']
+            if 'commissionRecipientId' in data and 'commission_recipient' not in data:
+                data['commission_recipient'] = data['commissionRecipientId']
+            if 'commission_recipient_id' in data and 'commission_recipient' not in data:
+                data['commission_recipient'] = data['commission_recipient_id']
+            if 'commissionAmount' in data and 'commission_amount' not in data:
+                data['commission_amount'] = data['commissionAmount']
         return super().to_internal_value(data)
 
     def get_invoice_number(self, obj) -> str:

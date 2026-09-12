@@ -21,9 +21,9 @@ class RoomTypeViewSet(TenantScopedViewSet):
     serializer_class = RoomTypeSerializer
     permission_classes = [IsAuthenticated, HasTenantAccess, HasModulePermission]
     action_permissions = {
-        'list': 'rooms:view',
-        'retrieve': 'rooms:view',
-        'dropdown_selector': 'rooms:view',
+        'list': ['rooms:view', 'bookings:view', 'bookings:manage'],
+        'retrieve': ['rooms:view', 'bookings:view', 'bookings:manage'],
+        'dropdown_selector': ['rooms:view', 'bookings:view', 'bookings:manage'],
         'create': 'rooms:manage',
         'update': 'rooms:manage',
         'partial_update': 'rooms:manage',
@@ -147,12 +147,12 @@ class RoomViewSet(TenantScopedViewSet):
     serializer_class = RoomListSerializer
     permission_classes = [IsAuthenticated, HasTenantAccess, HasModulePermission]
     action_permissions = {
-        'list': 'rooms:view',
-        'available_rooms': 'rooms:view',
-        'retrieve': 'rooms:view',
+        'list': ['rooms:view', 'bookings:view', 'bookings:manage'],
+        'available_rooms': ['rooms:view', 'bookings:view', 'bookings:manage'],
+        'retrieve': ['rooms:view', 'bookings:view', 'bookings:manage'],
         'create': 'rooms:manage',
-        'update': 'rooms:manage',
-        'partial_update': 'rooms:manage',
+        'update': ['rooms:manage', 'rooms:change_status'],
+        'partial_update': ['rooms:manage', 'rooms:change_status'],
         'destroy': 'rooms:manage',
         'change_status': 'rooms:change_status',
     }

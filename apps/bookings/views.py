@@ -29,8 +29,10 @@ class BookingViewSet(TenantScopedViewSet):
         'cancel': 'bookings:cancel',
         'check_in': 'bookings:update',
         'check_out': 'bookings:update',
+        'checkout_with_payment': 'bookings:update',
         'confirm': 'bookings:update',
         'record_payment': 'bookings:record_payment',
+        'add_extra_charge': 'bookings:update',
         'process_refund': 'bookings:cancel',
         'process_refund_alias': 'bookings:cancel',
     }
@@ -125,9 +127,24 @@ class BookingViewSet(TenantScopedViewSet):
             tax_rate=data.get('tax_rate', 0.0),
             tax_amount=data.get('tax_amount'),
             total_amount=data.get('total_amount'),
-            paid_amount=data.get('paid_amount', 0.0),
-            total_duration=data.get('total_duration', '')
+            paid_amount=Decimal('0.00'), # Handled below via record_payment
+            total_duration=data.get('total_duration', ''),
+            commission_recipient=data.get('commission_recipient'),
+            commission_amount=data.get('commission_amount', 0.0)
         )
+
+        # Handle Advance Payment
+        advance_paid = Decimal(str(data.get('paid_amount', 0.0)))
+        if advance_paid > 0:
+            payment_account_id = request.data.get('payment_account_id') or request.data.get('paymentAccountId')
+            payment_method = request.data.get('payment_method') or request.data.get('paymentMethod') or 'cash'
+            BookingService.record_payment(
+                booking=booking,
+                amount=advance_paid,
+                payment_account_id=payment_account_id,
+                payment_method=payment_method,
+                user=request.user if request.user.is_authenticated else None
+            )
 
         response_serializer = self.get_serializer(booking)
         return Response(response_serializer.data, status=status.HTTP_201_CREATED)
@@ -164,6 +181,50 @@ class BookingViewSet(TenantScopedViewSet):
             "housekeepingStatus": "DIRTY"
         }, status=status.HTTP_200_OK)
 
+    @action(detail=True, methods=['post'], url_path='checkout-with-payment')
+    def checkout_with_payment(self, request, pk=None):
+        booking = self.get_object()
+        
+        # 1. Handle Extra Charge if provided
+        extra_charge_name = request.data.get('extra_charge_name')
+        extra_charge_amount = request.data.get('extra_charge_amount')
+        
+        if extra_charge_name and extra_charge_amount:
+            amount = Decimal(str(extra_charge_amount))
+            if amount > 0:
+                charge_obj = {"name": extra_charge_name, "amount": float(amount)}
+                if not isinstance(booking.extra_charges, list):
+                    booking.extra_charges = []
+                booking.extra_charges.append(charge_obj)
+                booking.total_amount = Decimal(str(booking.total_amount)) + amount
+                booking.save(update_fields=['extra_charges', 'total_amount'])
+
+        # 2. Record Payment if provided
+        payment_amount = request.data.get('payment_amount')
+        payment_account_id = request.data.get('payment_account_id')
+        payment_method = request.data.get('payment_method')
+        
+        if payment_amount and float(payment_amount) > 0 and payment_account_id:
+            BookingService.record_payment(
+                booking=booking,
+                amount=Decimal(str(payment_amount)),
+                payment_account_id=payment_account_id,
+                payment_method=payment_method,
+                user=request.user if request.user.is_authenticated else None
+            )
+            
+        # 3. Check out the guest
+        updated_booking = BookingService.check_out(booking)
+        
+        return Response({
+            "success": True,
+            "message": f"Guest {updated_booking.guest_name} checked out with payment successfully.",
+            "id": updated_booking.id,
+            "status": "CHECKED_OUT",
+            "roomStatus": "AVAILABLE",
+            "housekeepingStatus": "DIRTY"
+        }, status=status.HTTP_200_OK)
+
     @action(detail=True, methods=['post'], url_path='cancel')
     def cancel(self, request, pk=None):
         booking = self.get_object()
@@ -171,9 +232,57 @@ class BookingViewSet(TenantScopedViewSet):
         serializer = self.get_serializer(updated_booking)
         return Response(serializer.data)
 
+    @action(detail=True, methods=['post'], url_path='add-extra-charge')
+    def add_extra_charge(self, request, pk=None):
+        booking = self.get_object()
+        
+        extra_charge_name = request.data.get('name')
+        extra_charge_amount = request.data.get('amount')
+        
+        if not extra_charge_name or not extra_charge_amount:
+            return Response(
+                {"success": False, "message": "Name and amount are required."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+            
+        amount = Decimal(str(extra_charge_amount))
+        if amount <= 0:
+            return Response(
+                {"success": False, "message": "Amount must be greater than zero."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+            
+        charge_obj = {"name": extra_charge_name, "amount": float(amount)}
+        if not isinstance(booking.extra_charges, list):
+            booking.extra_charges = []
+        booking.extra_charges.append(charge_obj)
+        booking.total_amount = Decimal(str(booking.total_amount or 0)) + amount
+        booking.save(update_fields=['extra_charges', 'total_amount'])
+        
+        return Response({
+            "success": True,
+            "message": f"Extra charge '{extra_charge_name}' posted successfully.",
+            "data": self.get_serializer(booking).data
+        })
+
     @action(detail=True, methods=['post'], url_path='record-payment')
     def record_payment(self, request, pk=None):
         booking = self.get_object()
+        
+        # Handle Extra Charge if provided
+        extra_charge_name = request.data.get('extra_charge_name')
+        extra_charge_amount = request.data.get('extra_charge_amount')
+        
+        if extra_charge_name and extra_charge_amount:
+            amount = Decimal(str(extra_charge_amount))
+            if amount > 0:
+                charge_obj = {"name": extra_charge_name, "amount": float(amount)}
+                if not isinstance(booking.extra_charges, list):
+                    booking.extra_charges = []
+                booking.extra_charges.append(charge_obj)
+                booking.total_amount = Decimal(str(booking.total_amount)) + amount
+                booking.save(update_fields=['extra_charges', 'total_amount'])
+
         serializer = RecordPaymentSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         acc_id = serializer.validated_data.get('payment_account_id') or serializer.validated_data.get('account_id')
