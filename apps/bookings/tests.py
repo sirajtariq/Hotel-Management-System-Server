@@ -289,4 +289,52 @@ class BookingTestCase(TestCase):
         self.assertEqual(checked_in_booking.total_refunded, Decimal('100.00'))
         self.assertEqual(checked_in_booking.status, 'CHECKED_IN')
 
+    def test_booking_discount_and_commission(self):
+        from apps.staff.models import StaffProfile
+        staff_profile = StaffProfile.objects.create(
+            tenant=self.tenant,
+            property=self.property,
+            name="Manager Ali",
+            position="General Manager"
+        )
+        check_in = date.today() + timedelta(days=20)
+        check_out = check_in + timedelta(days=2)
+
+        booking = BookingService.create_booking(
+            tenant=self.tenant,
+            room=self.room,
+            guest_name="Commission Guest",
+            guest_phone="+15559988",
+            check_in_date=check_in,
+            check_out_date=check_out,
+            subtotal_amount=Decimal('400.00'),
+            discount_type='FLAT',
+            discount_value=Decimal('50.00'),
+            commission_recipient=staff_profile,
+            commission_amount=Decimal('30.00')
+        )
+
+        self.assertEqual(booking.subtotal_amount, Decimal('400.00'))
+        self.assertEqual(booking.discount_amount, Decimal('50.00'))
+        self.assertEqual(booking.total_amount, Decimal('350.00'))
+        self.assertEqual(booking.commission_recipient, staff_profile)
+        self.assertEqual(booking.commission_amount, Decimal('30.00'))
+
+    def test_booking_discount_exceeding_subtotal_raises_error(self):
+        check_in = date.today() + timedelta(days=30)
+        check_out = check_in + timedelta(days=1)
+
+        with self.assertRaises(ValidationError):
+            BookingService.create_booking(
+                tenant=self.tenant,
+                room=self.room,
+                guest_name="Excess Discount Guest",
+                guest_phone="+15559977",
+                check_in_date=check_in,
+                check_out_date=check_out,
+                subtotal_amount=Decimal('200.00'),
+                discount_type='FLAT',
+                discount_value=Decimal('300.00')  # Exceeds gross subtotal of 200
+            )
+
 

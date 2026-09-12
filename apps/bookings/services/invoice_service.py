@@ -42,8 +42,14 @@ class InvoiceService:
                 })
 
         total_amount = booking.total_amount or Decimal('0.00')
-        room_charges = max(Decimal('0.00'), total_amount - pos_total)
-        total_folio_bill = room_charges + pos_total
+        
+        extra_charges_total = Decimal('0.00')
+        if hasattr(booking, 'extra_charges') and booking.extra_charges:
+            for charge in booking.extra_charges:
+                extra_charges_total += Decimal(str(charge.get("amount", "0.00")))
+
+        room_charges = max(Decimal('0.00'), total_amount - pos_total - extra_charges_total)
+        total_folio_bill = room_charges + pos_total + extra_charges_total
 
         total_refunded = Decimal(str(getattr(booking, 'total_refunded', 0) or 0))
         net_paid = Decimal(str(getattr(booking, 'paid_amount', 0) or 0))
@@ -56,6 +62,19 @@ class InvoiceService:
             "rate": str(booking.rate_applied or booking.nightly_rate or (room_charges / max(1, booking.total_nights or 1))),
             "total": str(room_charges),
         }
+
+        extra_charges_summary = []
+        if hasattr(booking, 'extra_charges') and booking.extra_charges:
+            for i, charge in enumerate(booking.extra_charges):
+                extra_charges_summary.append({
+                    "id": f"extra-{i}",
+                    "order_number": "-",
+                    "description": charge.get("name", "Other Charge"),
+                    "quantity": "1 item",
+                    "rate": str(charge.get("amount", "0.00")),
+                    "total": str(charge.get("amount", "0.00")),
+                    "payment_status": "PAID"
+                })
 
         tenant_code = getattr(booking.tenant, 'code', '') or 'RS'
         invoice_number = f"INV-{tenant_code.upper()}-2026-{booking.id:04d}"
@@ -82,7 +101,7 @@ class InvoiceService:
             "property": property_data,
             "guest": guest_data,
             "stay": stay_summary,
-            "line_items": [room_stay_item] + pos_items_summary,
+            "line_items": [room_stay_item] + pos_items_summary + extra_charges_summary,
             "room_stay_charges": str(room_charges),
             "restaurant_charges": str(pos_total),
             "total_folio_bill": str(total_folio_bill),

@@ -22,6 +22,12 @@ class StaffProfileViewSet(TenantScopedViewSet):
 
     def get_queryset(self):
         qs = super().get_queryset()
+        is_active = self.request.query_params.get('is_active')
+        if is_active is not None:
+            if is_active.lower() in ['true', '1']:
+                qs = qs.filter(is_active=True)
+            elif is_active.lower() in ['false', '0']:
+                qs = qs.filter(is_active=False)
         return qs.select_related('property', 'tenant', 'user', 'user__custom_role')
 
     def perform_create(self, serializer):
