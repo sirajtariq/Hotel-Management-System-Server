@@ -1,4 +1,7 @@
 PERMISSIONS_CATALOG = {
+    "Dashboard": [
+        {"code": "dashboard:view", "name": "View Main Dashboard & KPIs"},
+    ],
     "Properties": [
         {"code": "properties:view", "name": "View Properties"},
         {"code": "properties:manage", "name": "Create, Edit & Delete Properties"},

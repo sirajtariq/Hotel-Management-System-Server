@@ -21,7 +21,6 @@ class PropertyViewSet(TenantScopedViewSet):
     action_permissions = {
         'list': 'properties:view',
         'retrieve': 'properties:view',
-        'dropdown_selector': 'properties:view',
         'create': 'properties:manage',
         'update': 'properties:manage',
         'partial_update': 'properties:manage',

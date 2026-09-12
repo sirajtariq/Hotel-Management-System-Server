@@ -189,17 +189,20 @@ class HasModulePermission(permissions.BasePermission):
         if not required_perm:
             return True
 
+        # Normalize required_perm to a list
+        req_perms = required_perm if isinstance(required_perm, (list, tuple)) else [required_perm]
+
         # Custom role permission check
         if getattr(user, 'custom_role', None) and user.custom_role:
             user_perms = set(getattr(user.custom_role, 'permissions', []) or [])
-            if required_perm in user_perms:
+            if any(rp in user_perms for rp in req_perms):
                 return True
             return False
 
         # Legacy fallback if no custom_role is assigned
         role = getattr(user, 'role', '')
         if role == 'PROPERTY_MANAGER':
-            if not required_perm.startswith('roles:'):
+            if not any(rp.startswith('roles:') for rp in req_perms):
                 return True
         elif role == 'STAFF':
             allowed_staff_actions = {
@@ -207,7 +210,7 @@ class HasModulePermission(permissions.BasePermission):
                 'bookings:view', 'bookings:create', 'expenses:view',
                 'expenses:create', 'staff:view'
             }
-            if required_perm in allowed_staff_actions:
+            if any(rp in allowed_staff_actions for rp in req_perms):
                 return True
 
         return False
