@@ -10,6 +10,8 @@ from apps.reports.views import (
     HospitalityKpiReportTabEndpointView,
     RestaurantReportTabEndpointView,
     ReceivablesReportTabEndpointView,
+    StaffCommissionReportTabEndpointView,
+    StaffBookingsHistoryEndpointView,
     FinancialSuiteExportCsvView
 )
 
@@ -22,6 +24,8 @@ urlpatterns = [
     path('financial/hospitality_kpis/', HospitalityKpiReportTabEndpointView.as_view(), name='financial-hospitality-kpis'),
     path('financial/restaurant/', RestaurantReportTabEndpointView.as_view(), name='financial-restaurant'),
     path('financial/receivables/', ReceivablesReportTabEndpointView.as_view(), name='financial-receivables'),
+    path('financial/staff-commissions/', StaffCommissionReportTabEndpointView.as_view(), name='financial-staff-commissions'),
+    path('financial/staff-bookings/', StaffBookingsHistoryEndpointView.as_view(), name='financial-staff-bookings'),
     path('financial/suite_export_csv/', FinancialSuiteExportCsvView.as_view(), name='financial-suite-export-csv'),
     path('occupancy/', OccupancyReportView.as_view(), name='occupancy-report'),
     path('dashboard_analytics/', DashboardAnalyticsView.as_view(), name='dashboard-analytics'),

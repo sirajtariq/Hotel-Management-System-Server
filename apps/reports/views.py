@@ -294,6 +294,64 @@ class ReceivablesReportTabEndpointView(APIView):
         )
         return Response(data)
 
+class StaffCommissionReportTabEndpointView(APIView):
+    permission_classes = [IsAuthenticated, HasTenantAccess, HasModulePermission]
+    required_permission = 'reports:view_pnl'
+
+    def get(self, request):
+        query_serializer = FinancialFilterQuerySerializer(data=request.query_params)
+        query_serializer.is_valid(raise_exception=True)
+        params = query_serializer.validated_data
+
+        tenant_id = request.user.tenant_id
+        if (request.user.is_superuser or getattr(request.user, 'role', '') == 'SUPERADMIN') and request.query_params.get('tenant_id'):
+            tenant_id = int(request.query_params.get('tenant_id'))
+
+        if not tenant_id:
+            return Response({'error': {'code': 'tenant_required', 'message': 'Tenant context required.'}}, status=400)
+
+        data = FinancialReportingService.get_staff_commission_report(
+            tenant_id=tenant_id,
+            property_id=params.get('property_id'),
+            period=params.get('period', 'this_month'),
+            start_date=params.get('start_date'),
+            end_date=params.get('end_date')
+        )
+        return Response(data)
+
+class StaffBookingsHistoryEndpointView(APIView):
+    permission_classes = [IsAuthenticated, HasTenantAccess, HasModulePermission]
+    required_permission = 'reports:view_pnl'
+
+    def get(self, request):
+        query_serializer = FinancialFilterQuerySerializer(data=request.query_params)
+        query_serializer.is_valid(raise_exception=True)
+        params = query_serializer.validated_data
+
+        user_id = request.query_params.get('user_id')
+        role_type = request.query_params.get('role_type')
+
+        if not user_id or not role_type:
+            return Response({'error': {'message': 'user_id and role_type are required.'}}, status=400)
+
+        tenant_id = request.user.tenant_id
+        if (request.user.is_superuser or getattr(request.user, 'role', '') == 'SUPERADMIN') and request.query_params.get('tenant_id'):
+            tenant_id = int(request.query_params.get('tenant_id'))
+
+        if not tenant_id:
+            return Response({'error': {'code': 'tenant_required', 'message': 'Tenant context required.'}}, status=400)
+
+        data = FinancialReportingService.get_staff_bookings_history(
+            tenant_id=tenant_id,
+            user_id=int(user_id),
+            role_type=role_type,
+            property_id=params.get('property_id'),
+            period=params.get('period', 'this_month'),
+            start_date=params.get('start_date'),
+            end_date=params.get('end_date')
+        )
+        return Response(data)
+
 class FinancialSuiteExportCsvView(APIView):
     permission_classes = [IsAuthenticated, HasTenantAccess, HasModulePermission]
     required_permission = 'reports:export'

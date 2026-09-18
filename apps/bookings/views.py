@@ -130,7 +130,8 @@ class BookingViewSet(TenantScopedViewSet):
             paid_amount=Decimal('0.00'), # Handled below via record_payment
             total_duration=data.get('total_duration', ''),
             commission_recipient=data.get('commission_recipient'),
-            commission_amount=data.get('commission_amount', 0.0)
+            commission_amount=data.get('commission_amount', 0.0),
+            created_by=request.user if request.user.is_authenticated else None
         )
 
         # Handle Advance Payment
@@ -185,18 +186,29 @@ class BookingViewSet(TenantScopedViewSet):
     def checkout_with_payment(self, request, pk=None):
         booking = self.get_object()
         
-        # 1. Handle Extra Charge if provided
+        # 1. Handle Extra Charges
+        extra_charges_payload = request.data.get('extra_charges', [])
+        
+        # fallback for old signature
         extra_charge_name = request.data.get('extra_charge_name')
         extra_charge_amount = request.data.get('extra_charge_amount')
-        
         if extra_charge_name and extra_charge_amount:
-            amount = Decimal(str(extra_charge_amount))
-            if amount > 0:
-                charge_obj = {"name": extra_charge_name, "amount": float(amount)}
-                if not isinstance(booking.extra_charges, list):
-                    booking.extra_charges = []
-                booking.extra_charges.append(charge_obj)
-                booking.total_amount = Decimal(str(booking.total_amount)) + amount
+            extra_charges_payload.append({"name": extra_charge_name, "amount": extra_charge_amount})
+
+        if extra_charges_payload:
+            if not isinstance(booking.extra_charges, list):
+                booking.extra_charges = []
+                
+            total_extra_amount = Decimal('0')
+            for charge in extra_charges_payload:
+                amt = Decimal(str(charge.get('amount', 0)))
+                if amt > 0:
+                    charge_obj = {"name": charge.get('name'), "amount": float(amt)}
+                    booking.extra_charges.append(charge_obj)
+                    total_extra_amount += amt
+            
+            if total_extra_amount > 0:
+                booking.total_amount = Decimal(str(booking.total_amount)) + total_extra_amount
                 booking.save(update_fields=['extra_charges', 'total_amount'])
 
         # 2. Record Payment if provided
@@ -216,9 +228,11 @@ class BookingViewSet(TenantScopedViewSet):
         # 3. Check out the guest
         updated_booking = BookingService.check_out(booking)
         
+        serializer = self.get_serializer(updated_booking)
         return Response({
             "success": True,
             "message": f"Guest {updated_booking.guest_name} checked out with payment successfully.",
+            "data": serializer.data,
             "id": updated_booking.id,
             "status": "CHECKED_OUT",
             "roomStatus": "AVAILABLE",

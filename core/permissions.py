@@ -1,10 +1,15 @@
 from rest_framework import permissions
 from rest_framework.exceptions import PermissionDenied
 
+def is_superadmin_user(user) -> bool:
+    if not user or not user.is_authenticated:
+        return False
+    return bool(user.is_superuser or getattr(user, 'role', '').upper() in ['SUPERADMIN', 'SUPER_ADMIN'])
+
 def is_tenant_active(user) -> bool:
     if not user or not user.is_authenticated:
         return False
-    if user.is_superuser or getattr(user, 'role', '') == 'SUPERADMIN':
+    if is_superadmin_user(user):
         return True
     if getattr(user, 'tenant', None) and not user.tenant.is_active:
         return False
@@ -16,7 +21,7 @@ def is_tenant_overdue(user, request) -> bool:
     """
     if not user or not user.is_authenticated:
         return False
-    if user.is_superuser or getattr(user, 'role', '') == 'SUPERADMIN':
+    if is_superadmin_user(user):
         return False
     if getattr(user, 'tenant', None):
         status = getattr(user.tenant, 'subscription_status', 'PAID')
@@ -35,26 +40,27 @@ class IsSuperAdmin(permissions.BasePermission):
     Allows access only to global platform SuperAdmins.
     """
     def has_permission(self, request, view):
-        if not request.user or not request.user.is_authenticated:
-            return False
-        return bool(request.user.is_superuser or getattr(request.user, 'role', '') == 'SUPERADMIN')
+        if request.user and request.user.is_authenticated:
+            if is_superadmin_user(request.user):
+                return True
+        return False
 
     def has_object_permission(self, request, view, obj):
-        if not request.user or not request.user.is_authenticated:
-            return False
-        return bool(request.user.is_superuser or getattr(request.user, 'role', '') == 'SUPERADMIN')
+        if request.user and request.user.is_authenticated:
+            if is_superadmin_user(request.user):
+                return True
+        return False
 
 class IsTenantAdmin(permissions.BasePermission):
     """
     Allows access to Tenant Admins and SuperAdmins.
     """
     def has_permission(self, request, view):
+        if request.user and request.user.is_authenticated:
+            if is_superadmin_user(request.user):
+                return True
         if not request.user or not request.user.is_authenticated:
             return False
-
-        # 👑 ABSOLUTE SUPERADMIN BYPASS
-        if request.user.is_superuser or getattr(request.user, 'role', '') == 'SUPERADMIN':
-            return True
 
         if not is_tenant_active(request.user):
             return False
@@ -62,13 +68,14 @@ class IsTenantAdmin(permissions.BasePermission):
         if is_tenant_overdue(request.user, request):
             raise PermissionDenied("Subscription Expired: Your hotel subscription is OVERDUE. Please contact SuperAdmin to renew service.")
 
-        return getattr(request.user, 'role', '') in ['SUPERADMIN', 'TENANT_ADMIN']
+        return getattr(request.user, 'role', '').upper() in ['SUPERADMIN', 'SUPER_ADMIN', 'TENANT_ADMIN']
 
     def has_object_permission(self, request, view, obj):
+        if request.user and request.user.is_authenticated:
+            if is_superadmin_user(request.user):
+                return True
         if not request.user or not request.user.is_authenticated:
             return False
-        if request.user.is_superuser or getattr(request.user, 'role', '') == 'SUPERADMIN':
-            return True
         return True
 
 class IsPropertyManager(permissions.BasePermission):
@@ -76,12 +83,11 @@ class IsPropertyManager(permissions.BasePermission):
     Allows access to Property Managers, Tenant Admins, and SuperAdmins.
     """
     def has_permission(self, request, view):
+        if request.user and request.user.is_authenticated:
+            if is_superadmin_user(request.user):
+                return True
         if not request.user or not request.user.is_authenticated:
             return False
-
-        # 👑 ABSOLUTE SUPERADMIN BYPASS
-        if request.user.is_superuser or getattr(request.user, 'role', '') == 'SUPERADMIN':
-            return True
 
         if not is_tenant_active(request.user):
             return False
@@ -89,13 +95,14 @@ class IsPropertyManager(permissions.BasePermission):
         if is_tenant_overdue(request.user, request):
             raise PermissionDenied("Subscription Expired: Your hotel subscription is OVERDUE. Please contact SuperAdmin to renew service.")
 
-        return getattr(request.user, 'role', '') in ['SUPERADMIN', 'TENANT_ADMIN', 'PROPERTY_MANAGER']
+        return getattr(request.user, 'role', '').upper() in ['SUPERADMIN', 'SUPER_ADMIN', 'TENANT_ADMIN', 'PROPERTY_MANAGER']
 
     def has_object_permission(self, request, view, obj):
+        if request.user and request.user.is_authenticated:
+            if is_superadmin_user(request.user):
+                return True
         if not request.user or not request.user.is_authenticated:
             return False
-        if request.user.is_superuser or getattr(request.user, 'role', '') == 'SUPERADMIN':
-            return True
         return True
 
 class IsStaffMember(permissions.BasePermission):
@@ -103,12 +110,11 @@ class IsStaffMember(permissions.BasePermission):
     Allows access to Staff members, Property Managers, Tenant Admins, and SuperAdmins.
     """
     def has_permission(self, request, view):
+        if request.user and request.user.is_authenticated:
+            if is_superadmin_user(request.user):
+                return True
         if not request.user or not request.user.is_authenticated:
             return False
-
-        # 👑 ABSOLUTE SUPERADMIN BYPASS
-        if request.user.is_superuser or getattr(request.user, 'role', '') == 'SUPERADMIN':
-            return True
 
         if not is_tenant_active(request.user):
             return False
@@ -116,13 +122,14 @@ class IsStaffMember(permissions.BasePermission):
         if is_tenant_overdue(request.user, request):
             raise PermissionDenied("Subscription Expired: Your hotel subscription is OVERDUE. Please contact SuperAdmin to renew service.")
 
-        return getattr(request.user, 'role', '') in ['SUPERADMIN', 'TENANT_ADMIN', 'PROPERTY_MANAGER', 'STAFF']
+        return getattr(request.user, 'role', '').upper() in ['SUPERADMIN', 'SUPER_ADMIN', 'TENANT_ADMIN', 'PROPERTY_MANAGER', 'STAFF']
 
     def has_object_permission(self, request, view, obj):
+        if request.user and request.user.is_authenticated:
+            if is_superadmin_user(request.user):
+                return True
         if not request.user or not request.user.is_authenticated:
             return False
-        if request.user.is_superuser or getattr(request.user, 'role', '') == 'SUPERADMIN':
-            return True
         return True
 
 class HasTenantAccess(permissions.BasePermission):
@@ -130,19 +137,19 @@ class HasTenantAccess(permissions.BasePermission):
     Object-level permission checking that the object belongs to the user's tenant.
     """
     def has_permission(self, request, view):
+        if request.user and request.user.is_authenticated:
+            if is_superadmin_user(request.user):
+                return True
         if not request.user or not request.user.is_authenticated:
             return False
-        if request.user.is_superuser or getattr(request.user, 'role', '') == 'SUPERADMIN':
-            return True
         return True
 
     def has_object_permission(self, request, view, obj):
+        if request.user and request.user.is_authenticated:
+            if is_superadmin_user(request.user):
+                return True
         if not request.user or not request.user.is_authenticated:
             return False
-
-        # 👑 ABSOLUTE SUPERADMIN BYPASS
-        if request.user.is_superuser or getattr(request.user, 'role', '') == 'SUPERADMIN':
-            return True
 
         if not is_tenant_active(request.user):
             return False
@@ -152,7 +159,7 @@ class HasTenantAccess(permissions.BasePermission):
 
         tenant_id = getattr(request.user, 'tenant_id', None)
         obj_tenant_id = getattr(obj, 'tenant_id', None)
-        
+
         if tenant_id and obj_tenant_id:
             return tenant_id == obj_tenant_id
         return False
@@ -163,13 +170,12 @@ class HasModulePermission(permissions.BasePermission):
     - SuperAdmin and TenantAdmin bypass all checks (Full Access).
     """
     def has_permission(self, request, view):
+        if request.user and request.user.is_authenticated:
+            if is_superadmin_user(request.user):
+                return True
         user = request.user
         if not user or not user.is_authenticated:
             return False
-
-        # 👑 ABSOLUTE SUPERADMIN BYPASS
-        if user.is_superuser or getattr(user, 'role', '') == 'SUPERADMIN':
-            return True
 
         if not is_tenant_active(user):
             return False
@@ -178,7 +184,7 @@ class HasModulePermission(permissions.BasePermission):
             raise PermissionDenied("Subscription Expired: Your hotel subscription is OVERDUE. Please contact SuperAdmin to renew service.")
 
         # TenantAdmins have full access bypass
-        if getattr(user, 'role', '') == 'TENANT_ADMIN':
+        if getattr(user, 'role', '').upper() == 'TENANT_ADMIN':
             return True
 
         # Check action permissions mapping on ViewSet or required_permission on APIView
@@ -200,7 +206,7 @@ class HasModulePermission(permissions.BasePermission):
             return False
 
         # Legacy fallback if no custom_role is assigned
-        role = getattr(user, 'role', '')
+        role = getattr(user, 'role', '').upper()
         if role == 'PROPERTY_MANAGER':
             if not any(rp.startswith('roles:') for rp in req_perms):
                 return True
@@ -216,11 +222,9 @@ class HasModulePermission(permissions.BasePermission):
         return False
 
     def has_object_permission(self, request, view, obj):
+        if request.user and request.user.is_authenticated:
+            if is_superadmin_user(request.user):
+                return True
         if not request.user or not request.user.is_authenticated:
             return False
-        if request.user.is_superuser or getattr(request.user, 'role', '') == 'SUPERADMIN':
-            return True
         return True
-
-
-

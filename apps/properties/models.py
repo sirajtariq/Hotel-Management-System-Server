@@ -22,6 +22,8 @@ class Property(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    objects = models.Manager()
+
     class Meta:
         db_table = 'properties'
         ordering = ['-created_at']
@@ -35,10 +37,11 @@ class Property(models.Model):
         tenant_id = self.tenant_id or 'global'
         cache.delete(f"tenant_{tenant_id}_property_selector")
 
-    def delete(self, *args, **kwargs):
+    def delete(self, using=None, keep_parents=False):
         tenant_id = self.tenant_id or 'global'
-        super().delete(*args, **kwargs)
+        result = super().delete(using=using, keep_parents=keep_parents)
         cache.delete(f"tenant_{tenant_id}_property_selector")
+        return result
 
     def __str__(self):
         return f"{self.name} - {self.city}"
