@@ -9,7 +9,7 @@ from apps.staff.models import StaffProfile
 
 class ReportService:
     @staticmethod
-    def get_financial_summary(tenant_id: int, property_id: int = None, start_date: date = None, end_date: date = None) -> dict:
+    def get_financial_summary(tenant_id: int, property_id: int | None = None, start_date: date | None = None, end_date: date | None = None) -> dict:
         """
         SSOT function to calculate Financial Performance: Total Revenue, Total Expenses, Net Profit.
         """
@@ -17,6 +17,9 @@ class ReportService:
             start_date = date.today().replace(day=1)
         if not end_date:
             end_date = date.today()
+
+        if start_date > end_date:
+            end_date = start_date
 
         days_count = (end_date - start_date).days + 1
         months_fraction = Decimal(days_count) / Decimal('30.0')
@@ -82,7 +85,7 @@ class ReportService:
         }
 
     @staticmethod
-    def get_occupancy_summary(tenant_id: int, property_id: int = None, start_date: date = None, end_date: date = None) -> dict:
+    def get_occupancy_summary(tenant_id: int, property_id: int | None = None, start_date: date | None = None, end_date: date | None = None) -> dict:
         """
         SSOT function to calculate Occupancy Rate: (Occupied Room-Nights / Total Available Room-Nights) * 100.
         """
@@ -90,6 +93,9 @@ class ReportService:
             start_date = date.today().replace(day=1)
         if not end_date:
             end_date = date.today()
+
+        if start_date > end_date:
+            end_date = start_date
 
         days_count = (end_date - start_date).days + 1
         if days_count <= 0:
@@ -142,7 +148,7 @@ class ReportService:
         }
 
     @staticmethod
-    def get_dashboard_analytics(tenant_id: int, property_id: int = None, period: str = 'today') -> dict:
+    def get_dashboard_analytics(tenant_id: int, property_id: int | None = None, period: str = 'today') -> dict:
         """
         Executive Hospitality BI & Operations Command Center analytics engine.
         Calculates KPIs, trends, operations pulse, time-series data, and room type distributions.
@@ -325,16 +331,56 @@ class ReportService:
         ]
 
         # Time-Series Chart Data
+        chart_dict = {}
+        cur_day = start_date
+        while cur_day <= end_date:
+            chart_dict[cur_day] = {'occupied_rn': 0, 'revenue': 0.0}
+            cur_day += timedelta(days=1)
+
+        # We can just fetch the bookings for the chart once
+        chart_bookings = Booking.objects.filter(
+            tenant_id=tenant_id,
+            check_in_date__lte=end_date,
+            check_out_date__gte=start_date
+        ).exclude(status='CANCELLED')
+        if property_id:
+            chart_bookings = chart_bookings.filter(property_id=property_id)
+
+        for b in chart_bookings:
+            rate = float(b.nightly_rate or (b.total_amount / Decimal(b.total_nights or 1)))
+            o_start = max(b.check_in_date, start_date)
+            o_end = min(b.check_out_date, end_date)
+
+            if o_start == b.check_out_date:
+                if o_start in chart_dict:
+                    chart_dict[o_start]['occupied_rn'] += 1
+                    chart_dict[o_start]['revenue'] += rate
+            else:
+                temp_day = o_start
+                while temp_day <= o_end:
+                    if temp_day in chart_dict:
+                        chart_dict[temp_day]['occupied_rn'] += 1
+                        chart_dict[temp_day]['revenue'] += rate
+                    temp_day += timedelta(days=1)
+
         chart_data = []
         cur_day = start_date
         while cur_day <= end_date:
-            day_metrics = calculate_period_metrics(cur_day, cur_day)
+            vals = chart_dict[cur_day]
+            occ_rn = vals['occupied_rn']
+            rev = vals['revenue']
+            
+            avail_rn = total_rooms * 1  # 1 day
+            occ_rate = float(round((Decimal(occ_rn) / Decimal(avail_rn) * Decimal('100.0')), 2)) if avail_rn > 0 else 0.0
+            adr = float(round((rev / Decimal(occ_rn)), 2)) if occ_rn > 0 else 0.0
+            revpar = float(round((rev / Decimal(avail_rn)), 2)) if avail_rn > 0 else 0.0
+
             chart_data.append({
                 'date': cur_day.strftime('%Y-%m-%d'),
-                'revenue': day_metrics['revenue'],
-                'occupancy_rate': day_metrics['occupancy_rate'],
-                'adr': day_metrics['adr'],
-                'revpar': day_metrics['revpar'],
+                'revenue': round(rev, 2),
+                'occupancy_rate': occ_rate,
+                'adr': adr,
+                'revpar': revpar,
             })
             cur_day += timedelta(days=1)
 

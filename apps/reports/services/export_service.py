@@ -12,7 +12,7 @@ from apps.reports.services.report_service import ReportService
 
 class ExportService:
     @staticmethod
-    def export_pnl_csv(tenant_id: int, property_id: int = None, start_date: date = None, end_date: date = None) -> str:
+    def export_pnl_csv(tenant_id: int, property_id: int | None = None, start_date: date | None = None, end_date: date | None = None) -> str:
         """
         SSOT CSV Exporter for Profit & Loss (P&L) Financial Report with UTF-8 BOM ('\ufeff').
         """

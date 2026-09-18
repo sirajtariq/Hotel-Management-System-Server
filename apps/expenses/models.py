@@ -40,6 +40,8 @@ class Expense(models.Model):
         ('ONLINE', 'Online / Wallet'),
     ]
 
+    objects = models.Manager()
+
     tenant = models.ForeignKey(Tenant, on_delete=models.CASCADE, related_name='expenses')
     property = models.ForeignKey(Property, on_delete=models.CASCADE, related_name='expenses')
     account_head = models.ForeignKey(AccountHead, on_delete=models.PROTECT, related_name='expenses', null=True, blank=True)
@@ -66,6 +68,7 @@ class Expense(models.Model):
             models.Index(fields=['tenant', 'property', 'expense_date']),
             models.Index(fields=['account_head']),
             models.Index(fields=['payment_method']),
+            models.Index(fields=['tenant', 'expense_date']),
         ]
 
     def __str__(self):

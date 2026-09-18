@@ -48,6 +48,8 @@ class Tenant(models.Model):
 
     updated_at = models.DateTimeField(auto_now=True)
 
+    objects = models.Manager()
+
     class Meta:
         db_table = 'tenants'
         ordering = ['-created_at']

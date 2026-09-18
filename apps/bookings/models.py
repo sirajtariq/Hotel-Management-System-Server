@@ -85,6 +85,7 @@ class Booking(models.Model):
             models.Index(fields=['tenant', 'status', 'check_in_date']),
             models.Index(fields=['room', 'check_in_date', 'check_out_date']),
             models.Index(fields=['payment_status']),
+            models.Index(fields=['tenant', 'property', 'check_in_date', 'check_out_date']),
         ]
 
 
