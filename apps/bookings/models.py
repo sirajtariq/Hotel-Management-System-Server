@@ -1,4 +1,5 @@
 from django.db import models
+from django.conf import settings
 from apps.tenants.models import Tenant
 from apps.properties.models import Property
 from apps.rooms.models import Room
@@ -71,6 +72,14 @@ class Booking(models.Model):
         related_name='commission_bookings'
     )
     commission_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
+
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='created_bookings'
+    )
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

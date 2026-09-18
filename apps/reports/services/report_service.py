@@ -217,13 +217,13 @@ class ReportService:
                 o_days = (o_end - o_start).days
                 if o_days > 0:
                     occupied_rn += o_days
-                    rate = b.nightly_rate or (b.total_amount / Decimal(b.total_nights if b.total_nights else 1))
-                    total_rev += Decimal(o_days) * rate
+                    rate = b.nightly_rate or (Decimal(str(b.total_amount or 0)) / Decimal(b.total_nights if b.total_nights else 1))
+                    total_rev += Decimal(str(o_days)) * Decimal(str(rate))
 
             avail_rn = total_rooms * p_days
-            occ_rate = float(round((Decimal(occupied_rn) / Decimal(avail_rn) * Decimal('100.0')), 2)) if avail_rn > 0 else 0.0
-            adr = float(round((total_rev / Decimal(occupied_rn)), 2)) if occupied_rn > 0 else 0.0
-            revpar = float(round((total_rev / Decimal(avail_rn)), 2)) if avail_rn > 0 else 0.0
+            occ_rate = float(round((Decimal(str(occupied_rn)) / Decimal(str(avail_rn)) * Decimal('100.0')), 2)) if avail_rn > 0 else 0.0
+            adr = float(round((total_rev / Decimal(str(occupied_rn))), 2)) if occupied_rn > 0 else 0.0
+            revpar = float(round((total_rev / Decimal(str(avail_rn))), 2)) if avail_rn > 0 else 0.0
 
             return {
                 'revenue': float(round(total_rev, 2)),
@@ -257,7 +257,7 @@ class ReportService:
             today_bookings = today_bookings.filter(property_id=property_id)
 
         today_revenue = sum(
-            float(b.nightly_rate or (b.total_amount / Decimal(b.total_nights or 1))) for b in today_bookings
+            float(b.nightly_rate or (Decimal(str(b.total_amount or 0)) / Decimal(b.total_nights or 1))) for b in today_bookings
         )
 
         # Live Operations Pulse Feed
@@ -347,7 +347,7 @@ class ReportService:
             chart_bookings = chart_bookings.filter(property_id=property_id)
 
         for b in chart_bookings:
-            rate = float(b.nightly_rate or (b.total_amount / Decimal(b.total_nights or 1)))
+            rate = float(b.nightly_rate or (Decimal(str(b.total_amount or 0)) / Decimal(b.total_nights or 1)))
             o_start = max(b.check_in_date, start_date)
             o_end = min(b.check_out_date, end_date)
 
@@ -371,9 +371,9 @@ class ReportService:
             rev = vals['revenue']
             
             avail_rn = total_rooms * 1  # 1 day
-            occ_rate = float(round((Decimal(occ_rn) / Decimal(avail_rn) * Decimal('100.0')), 2)) if avail_rn > 0 else 0.0
-            adr = float(round((rev / Decimal(occ_rn)), 2)) if occ_rn > 0 else 0.0
-            revpar = float(round((rev / Decimal(avail_rn)), 2)) if avail_rn > 0 else 0.0
+            occ_rate = float(round((Decimal(str(occ_rn)) / Decimal(str(avail_rn)) * Decimal('100.0')), 2)) if avail_rn > 0 else 0.0
+            adr = float(round((Decimal(str(rev)) / Decimal(str(occ_rn))), 2)) if occ_rn > 0 else 0.0
+            revpar = float(round((Decimal(str(rev)) / Decimal(str(avail_rn))), 2)) if avail_rn > 0 else 0.0
 
             chart_data.append({
                 'date': cur_day.strftime('%Y-%m-%d'),

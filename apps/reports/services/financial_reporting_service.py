@@ -14,6 +14,7 @@ from apps.restaurant.models import RestaurantOrder, RestaurantOrderItem, MenuIte
 class FinancialReportingService:
     @staticmethod
     def get_date_range(period: str = 'this_month', start_date: date | None = None, end_date: date | None = None):
+        import calendar
         today = date.today()
 
         if period == 'today':
@@ -27,7 +28,8 @@ class FinancialReportingService:
             e_date = today
         elif period == 'this_month':
             s_date = today.replace(day=1)
-            e_date = today
+            last_day = calendar.monthrange(today.year, today.month)[1]
+            e_date = today.replace(day=last_day)
         elif period == 'last_month':
             first_this_month = today.replace(day=1)
             last_month_end = first_this_month - timedelta(days=1)
@@ -36,16 +38,23 @@ class FinancialReportingService:
         elif period == 'quarter':
             q_month = ((today.month - 1) // 3) * 3 + 1
             s_date = date(today.year, q_month, 1)
-            e_date = today
+            next_q_month = q_month + 3
+            if next_q_month > 12:
+                last_day = calendar.monthrange(today.year, 12)[1]
+                e_date = date(today.year, 12, last_day)
+            else:
+                last_day = calendar.monthrange(today.year, next_q_month - 1)[1]
+                e_date = date(today.year, next_q_month - 1, last_day)
         elif period == 'ytd':
             s_date = date(today.year, 1, 1)
-            e_date = today
+            e_date = date(today.year, 12, 31)
         elif period == 'custom' and start_date and end_date:
             s_date = start_date
             e_date = end_date
         else:
             s_date = today.replace(day=1)
-            e_date = today
+            last_day = calendar.monthrange(today.year, today.month)[1]
+            e_date = today.replace(day=last_day)
 
         if s_date > e_date:
             e_date = s_date
@@ -77,8 +86,8 @@ class FinancialReportingService:
             o_end = min(b.check_out_date, e_date + timedelta(days=1))
             o_days = (o_end - o_start).days
             if o_days > 0:
-                rate = b.nightly_rate or (b.total_amount / Decimal(b.total_nights or 1))
-                room_revenue += Decimal(o_days) * rate
+                rate = b.nightly_rate or (Decimal(str(b.total_amount or 0)) / Decimal(b.total_nights or 1))
+                room_revenue += Decimal(o_days) * Decimal(str(rate))
 
         # 2. Restaurant Revenue
         restaurant_query = RestaurantOrder.objects.filter(
@@ -141,7 +150,7 @@ class FinancialReportingService:
                 chart_dict[rest_date]['revenue'] += float(rest['total'] or Decimal('0.0'))
 
         for b in booking_query:
-            rate = float(b.nightly_rate or (b.total_amount / Decimal(b.total_nights or 1)))
+            rate = float(b.nightly_rate or (Decimal(str(b.total_amount or 0)) / Decimal(b.total_nights or 1)))
             o_start = max(b.check_in_date, s_date)
             o_end = min(b.check_out_date, e_date)
             
@@ -229,8 +238,8 @@ class FinancialReportingService:
                 o_end = min(b.check_out_date, e_date + timedelta(days=1))
                 o_days = (o_end - o_start).days
                 if o_days > 0:
-                    rate = b.nightly_rate or (b.total_amount / Decimal(b.total_nights or 1))
-                    rt_rev += Decimal(o_days) * rate
+                    rate = b.nightly_rate or (Decimal(str(b.total_amount or 0)) / Decimal(b.total_nights or 1))
+                    rt_rev += Decimal(o_days) * Decimal(str(rate))
 
             total_room_rev += rt_rev
             revenue_by_room_type.append({
@@ -271,7 +280,7 @@ class FinancialReportingService:
             cur_day += timedelta(days=1)
 
         for b in booking_query:
-            rate = float(b.nightly_rate or (b.total_amount / Decimal(b.total_nights or 1)))
+            rate = float(b.nightly_rate or (Decimal(str(b.total_amount or 0)) / Decimal(b.total_nights or 1)))
             o_start = max(b.check_in_date, s_date)
             o_end = min(b.check_out_date, e_date)
             
@@ -422,8 +431,8 @@ class FinancialReportingService:
             o_days = (o_end - o_start).days
             if o_days > 0:
                 occupied_room_nights += o_days
-                rate = b.nightly_rate or (b.total_amount / Decimal(b.total_nights or 1))
-                total_room_revenue += Decimal(o_days) * rate
+                rate = b.nightly_rate or (Decimal(str(b.total_amount or 0)) / Decimal(b.total_nights or 1))
+                total_room_revenue += Decimal(o_days) * Decimal(str(rate))
                 total_guest_nights += b.total_nights
 
         occupancy_rate = float(round((Decimal(occupied_room_nights) / Decimal(total_available_room_nights) * Decimal('100.0')), 2)) if total_available_room_nights > 0 else 0.0
@@ -439,7 +448,7 @@ class FinancialReportingService:
             cur_day += timedelta(days=1)
 
         for b in bookings_query:
-            rate = float(b.nightly_rate or (b.total_amount / Decimal(b.total_nights or 1)))
+            rate = float(b.nightly_rate or (Decimal(str(b.total_amount or 0)) / Decimal(b.total_nights or 1)))
             o_start = max(b.check_in_date, s_date)
             o_end = min(b.check_out_date, e_date)
             
@@ -492,8 +501,8 @@ class FinancialReportingService:
                 o_days = (o_end - o_start).days
                 if o_days > 0:
                     rt_occ_nights += o_days
-                    rate = b.nightly_rate or (b.total_amount / Decimal(b.total_nights or 1))
-                    rt_rev += Decimal(o_days) * rate
+                    rate = b.nightly_rate or (Decimal(str(b.total_amount or 0)) / Decimal(b.total_nights or 1))
+                    rt_rev += Decimal(o_days) * Decimal(str(rate))
 
             rt_avail = rt_count * days_count
             rt_occ_rate = float(round((rt_occ_nights / rt_avail * 100.0) if rt_avail > 0 else 0.0, 1))
@@ -647,6 +656,131 @@ class FinancialReportingService:
             'total_pending_balance': float(round(total_pending_balance, 2)),
             'aging_receivables': aging_receivables,
         }
+    # -------------------------------------------------------------------------
+    # TAB 7: Staff & Commission Report
+    # -------------------------------------------------------------------------
+    @classmethod
+    def get_staff_commission_report(cls, tenant_id: int, property_id: int | None = None, period: str = 'this_month', start_date: date | None = None, end_date: date | None = None) -> dict:
+        s_date, e_date = cls.get_date_range(period, start_date, end_date)
+
+        booking_query = Booking.objects.filter(
+            tenant_id=tenant_id,
+            check_in_date__gte=s_date,
+            check_in_date__lte=e_date
+        ).exclude(status='CANCELLED')
+
+        if property_id:
+            booking_query = booking_query.filter(property_id=property_id)
+
+        # Totals
+        total_bookings = booking_query.count()
+        commission_bookings = booking_query.filter(commission_amount__gt=0)
+        commission_bookings_count = commission_bookings.count()
+        
+        total_revenue = booking_query.aggregate(total=Sum('total_amount'))['total'] or Decimal('0.0')
+        total_commission_payable = booking_query.aggregate(total=Sum('commission_amount'))['total'] or Decimal('0.0')
+
+        # Agents Summary (Group by commission_recipient)
+        agents_summary_qs = booking_query.filter(
+            commission_recipient__isnull=False
+        ).values(
+            'commission_recipient__id',
+            'commission_recipient__name'
+        ).annotate(
+            referred_bookings_count=Count('id'),
+            total_referred_revenue=Sum('total_amount'),
+            commission_earned=Sum('commission_amount')
+        ).order_by('-commission_earned')
+
+        agents_summary = []
+        for s in agents_summary_qs:
+            agents_summary.append({
+                'agent_id': s['commission_recipient__id'],
+                'agent_name': s['commission_recipient__name'],
+                'role': 'Referral Agent',
+                'referred_bookings_count': s['referred_bookings_count'],
+                'total_referred_revenue': float(round(s['total_referred_revenue'] or Decimal('0.0'), 2)),
+                'commission_earned': float(round(s['commission_earned'] or Decimal('0.0'), 2))
+            })
+
+        # Operators Summary (Group by created_by)
+        operators_summary_qs = booking_query.filter(
+            created_by__isnull=False
+        ).values(
+            'created_by__id',
+            'created_by__first_name',
+            'created_by__last_name',
+        ).annotate(
+            total_entries_count=Count('id'),
+            total_revenue_entered=Sum('total_amount')
+        ).order_by('-total_entries_count')
+
+        operators_summary = []
+        for s in operators_summary_qs:
+            name = f"{s.get('created_by__first_name', '')} {s.get('created_by__last_name', '')}".strip() or f"User {s['created_by__id']}"
+            operators_summary.append({
+                'user_id': s['created_by__id'],
+                'user_name': name,
+                'role': 'Data Entry Operator',
+                'total_entries_count': s['total_entries_count'],
+                'total_revenue_entered': float(round(s['total_revenue_entered'] or Decimal('0.0'), 2))
+            })
+
+        return {
+            'period': period,
+            'start_date': s_date.isoformat(),
+            'end_date': e_date.isoformat(),
+            'total_bookings_created': total_bookings,
+            'commission_eligible_bookings': commission_bookings_count,
+            'total_revenue_handled': float(round(total_revenue, 2)),
+            'total_commission_payable': float(round(total_commission_payable, 2)),
+            'agents_summary': agents_summary,
+            'operators_summary': operators_summary,
+        }
+
+    @classmethod
+    def get_staff_bookings_history(cls, tenant_id: int, user_id: int, role_type: str, property_id: int | None = None, period: str = 'this_month', start_date: date | None = None, end_date: date | None = None) -> list:
+        s_date, e_date = cls.get_date_range(period, start_date, end_date)
+
+        booking_query = Booking.objects.filter(
+            tenant_id=tenant_id,
+            check_in_date__gte=s_date,
+            check_in_date__lte=e_date
+        )
+
+        if property_id:
+            booking_query = booking_query.filter(property_id=property_id)
+
+        if role_type == 'agent':
+            booking_query = booking_query.filter(commission_recipient_id=user_id, commission_amount__gt=0)
+        elif role_type == 'operator':
+            booking_query = booking_query.filter(created_by_id=user_id)
+        else:
+            return []
+
+        qs = booking_query.values(
+            'id',
+            'booking_reference',
+            'check_in_date',
+            'guest_name',
+            'room__room_number',
+            'total_amount',
+            'status'
+        ).order_by('-check_in_date')[:100]
+
+        history = []
+        for b in qs:
+            history.append({
+                'id': b['id'],
+                'booking_reference': b['booking_reference'] or f"#{b['id']}",
+                'check_in_date': b['check_in_date'].isoformat() if isinstance(b['check_in_date'], date) else b['check_in_date'],
+                'guest_name': b['guest_name'],
+                'room_number': b['room__room_number'] or 'N/A',
+                'total_amount': float(round(b['total_amount'] or Decimal('0.0'), 2)),
+                'status': b['status']
+            })
+        
+        return history
 
     # -------------------------------------------------------------------------
     # CSV Streaming Exporter

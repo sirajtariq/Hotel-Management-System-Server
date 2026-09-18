@@ -92,7 +92,8 @@ class BookingService:
         paid_amount: Decimal = Decimal('0.0'),
         total_duration: str = '',
         commission_recipient=None,
-        commission_amount: Decimal = Decimal('0.00')
+        commission_amount: Decimal = Decimal('0.00'),
+        created_by=None
     ) -> Booking:
         """
         SSOT function to create a new booking supporting NIGHTLY and HOURLY modes with manual Tax %, Discount, and Commission recipient tracking.
@@ -210,7 +211,8 @@ class BookingService:
             commission_recipient=commission_recipient,
             commission_amount=Decimal(commission_amount),
             payment_status=payment_status,
-            status=booking_status
+            status=booking_status,
+            created_by=created_by
         )
 
         now = timezone.now()
