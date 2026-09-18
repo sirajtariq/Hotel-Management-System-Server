@@ -23,10 +23,9 @@ class StaffTestCase(TestCase):
             name="Maria Gonzalez",
             department="Housekeeping",
             position="Senior Cleaner",
-            phone="+15551122",
+            phone_number="+15551122",
             monthly_salary=Decimal('3200.00'),
-            hired_date=date.today(),
-            user=None  # Standalone, no login account needed
+            hired_date=date.today()
         )
 
         self.assertEqual(staff.name, "Maria Gonzalez")
