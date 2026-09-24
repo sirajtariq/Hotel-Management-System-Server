@@ -37,8 +37,9 @@ class AccountHeadViewSet(TenantScopedViewSet):
                 ExpenseService.auto_seed_default_account_heads(user.tenant)
                 qs = super().get_queryset()
 
-        search = self.request.query_params.get('search', '').strip()
-        is_active = self.request.query_params.get('is_active')
+        query_params = getattr(self.request, 'query_params', self.request.GET)
+        search = query_params.get('search', '').strip()
+        is_active = query_params.get('is_active')
         if search:
             qs = qs.filter(Q(name__icontains=search) | Q(description__icontains=search))
         if is_active is not None:
@@ -165,12 +166,13 @@ class ExpenseViewSet(TenantScopedViewSet):
         qs = super().get_queryset()
         qs = qs.select_related('property', 'account_head', 'category', 'tenant', 'created_by')
 
-        account_head_id = self.request.query_params.get('account_head_id')
-        payment_method = self.request.query_params.get('payment_method')
-        property_id = self.request.query_params.get('property_id')
-        start_date = self.request.query_params.get('start_date')
-        end_date = self.request.query_params.get('end_date')
-        search = self.request.query_params.get('search', '').strip()
+        query_params = getattr(self.request, 'query_params', self.request.GET)
+        account_head_id = query_params.get('account_head_id')
+        payment_method = query_params.get('payment_method')
+        property_id = query_params.get('property_id')
+        start_date = query_params.get('start_date')
+        end_date = query_params.get('end_date')
+        search = query_params.get('search', '').strip()
 
         if account_head_id:
             qs = qs.filter(account_head_id=account_head_id)
@@ -242,15 +244,16 @@ class ExpenseViewSet(TenantScopedViewSet):
 
     @action(detail=False, methods=['get'], url_path='export_csv')
     def export_csv(self, request):
+        query_params = getattr(request, 'query_params', request.GET)
         tenant_id = request.user.tenant_id
-        if (request.user.is_superuser or getattr(request.user, 'role', '') == 'SUPERADMIN') and request.query_params.get('tenant_id'):
-            tenant_id = int(request.query_params.get('tenant_id'))
+        if (request.user.is_superuser or getattr(request.user, 'role', '') == 'SUPERADMIN') and query_params.get('tenant_id'):
+            tenant_id = int(query_params.get('tenant_id'))
 
-        property_id = request.query_params.get('property_id')
-        account_head_id = request.query_params.get('account_head_id')
-        payment_method = request.query_params.get('payment_method')
-        start_date = request.query_params.get('start_date')
-        end_date = request.query_params.get('end_date')
+        property_id = query_params.get('property_id')
+        account_head_id = query_params.get('account_head_id')
+        payment_method = query_params.get('payment_method')
+        start_date = query_params.get('start_date')
+        end_date = query_params.get('end_date')
 
         csv_content = ExpenseService.export_expenses_csv(
             tenant_id=tenant_id,

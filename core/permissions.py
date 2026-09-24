@@ -39,13 +39,13 @@ class IsSuperAdmin(permissions.BasePermission):
     """
     Allows access only to global platform SuperAdmins.
     """
-    def has_permission(self, request, view):
+    def has_permission(self, request, view) -> bool:  # type: ignore[reportIncompatibleMethodOverride]
         if request.user and request.user.is_authenticated:
             if is_superadmin_user(request.user):
                 return True
         return False
 
-    def has_object_permission(self, request, view, obj):
+    def has_object_permission(self, request, view, obj) -> bool:  # type: ignore[reportIncompatibleMethodOverride]
         if request.user and request.user.is_authenticated:
             if is_superadmin_user(request.user):
                 return True
@@ -55,7 +55,7 @@ class IsTenantAdmin(permissions.BasePermission):
     """
     Allows access to Tenant Admins and SuperAdmins.
     """
-    def has_permission(self, request, view):
+    def has_permission(self, request, view) -> bool:  # type: ignore[reportIncompatibleMethodOverride]
         if request.user and request.user.is_authenticated:
             if is_superadmin_user(request.user):
                 return True
@@ -70,7 +70,7 @@ class IsTenantAdmin(permissions.BasePermission):
 
         return getattr(request.user, 'role', '').upper() in ['SUPERADMIN', 'SUPER_ADMIN', 'TENANT_ADMIN']
 
-    def has_object_permission(self, request, view, obj):
+    def has_object_permission(self, request, view, obj) -> bool:  # type: ignore[reportIncompatibleMethodOverride]
         if request.user and request.user.is_authenticated:
             if is_superadmin_user(request.user):
                 return True
@@ -82,7 +82,7 @@ class IsPropertyManager(permissions.BasePermission):
     """
     Allows access to Property Managers, Tenant Admins, and SuperAdmins.
     """
-    def has_permission(self, request, view):
+    def has_permission(self, request, view) -> bool:  # type: ignore[reportIncompatibleMethodOverride]
         if request.user and request.user.is_authenticated:
             if is_superadmin_user(request.user):
                 return True
@@ -97,7 +97,7 @@ class IsPropertyManager(permissions.BasePermission):
 
         return getattr(request.user, 'role', '').upper() in ['SUPERADMIN', 'SUPER_ADMIN', 'TENANT_ADMIN', 'PROPERTY_MANAGER']
 
-    def has_object_permission(self, request, view, obj):
+    def has_object_permission(self, request, view, obj) -> bool:  # type: ignore[reportIncompatibleMethodOverride]
         if request.user and request.user.is_authenticated:
             if is_superadmin_user(request.user):
                 return True
@@ -109,7 +109,7 @@ class IsStaffMember(permissions.BasePermission):
     """
     Allows access to Staff members, Property Managers, Tenant Admins, and SuperAdmins.
     """
-    def has_permission(self, request, view):
+    def has_permission(self, request, view) -> bool:  # type: ignore[reportIncompatibleMethodOverride]
         if request.user and request.user.is_authenticated:
             if is_superadmin_user(request.user):
                 return True
@@ -124,7 +124,7 @@ class IsStaffMember(permissions.BasePermission):
 
         return getattr(request.user, 'role', '').upper() in ['SUPERADMIN', 'SUPER_ADMIN', 'TENANT_ADMIN', 'PROPERTY_MANAGER', 'STAFF']
 
-    def has_object_permission(self, request, view, obj):
+    def has_object_permission(self, request, view, obj) -> bool:  # type: ignore[reportIncompatibleMethodOverride]
         if request.user and request.user.is_authenticated:
             if is_superadmin_user(request.user):
                 return True
@@ -136,7 +136,7 @@ class HasTenantAccess(permissions.BasePermission):
     """
     Object-level permission checking that the object belongs to the user's tenant.
     """
-    def has_permission(self, request, view):
+    def has_permission(self, request, view) -> bool:  # type: ignore[reportIncompatibleMethodOverride]
         if request.user and request.user.is_authenticated:
             if is_superadmin_user(request.user):
                 return True
@@ -144,7 +144,7 @@ class HasTenantAccess(permissions.BasePermission):
             return False
         return True
 
-    def has_object_permission(self, request, view, obj):
+    def has_object_permission(self, request, view, obj) -> bool:  # type: ignore[reportIncompatibleMethodOverride]
         if request.user and request.user.is_authenticated:
             if is_superadmin_user(request.user):
                 return True
@@ -169,7 +169,7 @@ class HasModulePermission(permissions.BasePermission):
     Dynamic RBAC permission check based on core/permissions_registry.py.
     - SuperAdmin and TenantAdmin bypass all checks (Full Access).
     """
-    def has_permission(self, request, view):
+    def has_permission(self, request, view) -> bool:  # type: ignore[reportIncompatibleMethodOverride]
         if request.user and request.user.is_authenticated:
             if is_superadmin_user(request.user):
                 return True
@@ -221,7 +221,7 @@ class HasModulePermission(permissions.BasePermission):
 
         return False
 
-    def has_object_permission(self, request, view, obj):
+    def has_object_permission(self, request, view, obj) -> bool:  # type: ignore[reportIncompatibleMethodOverride]
         if request.user and request.user.is_authenticated:
             if is_superadmin_user(request.user):
                 return True

@@ -178,6 +178,7 @@ class UserCreateSerializer(serializers.ModelSerializer):
 class UserSessionSerializer(serializers.ModelSerializer):
     full_name = serializers.SerializerMethodField()
     tenant_name = serializers.CharField(source='tenant.name', default=None, read_only=True)
+    tenant_details = TenantSerializer(source='tenant', read_only=True)
     assigned_properties = serializers.SerializerMethodField()
     permissions = serializers.SerializerMethodField()
 
@@ -197,6 +198,7 @@ class UserSessionSerializer(serializers.ModelSerializer):
             'is_superuser',
             'tenant',
             'tenant_name',
+            'tenant_details',
             'assigned_properties',
             'permissions',
             'fullName',
@@ -261,12 +263,12 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
                 attrs['username'] = user.username
 
         data = super().validate(attrs)
-        if self.user and self.user.tenant and not self.user.tenant.is_active:
-            if not (self.user.is_superuser or getattr(self.user, 'role', '') == 'SUPERADMIN'):
+        if self.user and getattr(self.user, 'tenant', None) and not self.user.tenant.is_active:
+            if not (getattr(self.user, 'is_superuser', False) or getattr(self.user, 'role', '') == 'SUPERADMIN'):
                 raise serializers.ValidationError({
                     'detail': 'Your tenant account is suspended or inactive. Please contact SuperAdmin support.'
                 })
-        data['user'] = UserSessionSerializer(self.user).data
+        data['user'] = UserSessionSerializer(self.user).data  # type: ignore
         return data
 
 class UserProfileSerializer(serializers.ModelSerializer):
@@ -280,16 +282,16 @@ class ChangePasswordSerializer(serializers.Serializer):
     new_password = serializers.CharField(write_only=True, required=True, style={'input_type': 'password'})
     confirm_password = serializers.CharField(write_only=True, required=True, style={'input_type': 'password'})
 
-    def validate(self, data):
-        if data['new_password'] != data['confirm_password']:
+    def validate(self, attrs):
+        if attrs['new_password'] != attrs['confirm_password']:
             raise serializers.ValidationError({'confirm_password': 'New password and confirm password do not match.'})
-        return data
+        return attrs
 
 class AdminResetPasswordSerializer(serializers.Serializer):
     new_password = serializers.CharField(write_only=True, required=True, style={'input_type': 'password'})
     confirm_password = serializers.CharField(write_only=True, required=True, style={'input_type': 'password'})
 
-    def validate(self, data):
-        if data['new_password'] != data['confirm_password']:
+    def validate(self, attrs):
+        if attrs['new_password'] != attrs['confirm_password']:
             raise serializers.ValidationError({'confirm_password': 'New password and confirm password do not match.'})
-        return data
+        return attrs

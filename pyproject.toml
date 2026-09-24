@@ -33,4 +33,5 @@ extraPaths = ["."]
 [dependency-groups]
 dev = [
     "django-stubs>=6.1.1",
+    "djangorestframework-stubs>=3.18.1",
 ]

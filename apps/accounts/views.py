@@ -71,6 +71,12 @@ class PaymentAccountViewSet(TenantScopedViewSet):
     def transactions_ledger(self, request, pk=None):
         account = self.get_object()
         qs = AccountTransaction.objects.filter(tenant=account.tenant, account=account).order_by('-created_at')
+        
+        page = self.paginate_queryset(qs)
+        if page is not None:
+            serializer = AccountTransactionSerializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
         serializer = AccountTransactionSerializer(qs, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
