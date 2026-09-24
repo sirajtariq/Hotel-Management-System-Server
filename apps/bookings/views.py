@@ -51,7 +51,9 @@ class BookingViewSet(TenantScopedViewSet):
 
         qs = qs.select_related(*related)
 
-        search = self.request.query_params.get('search')
+        query_params = getattr(self.request, 'query_params', getattr(self.request, 'GET', {})) if hasattr(self, 'request') and self.request else {}
+
+        search = query_params.get('search')
         if search:
             from django.db.models import Q
             qs = qs.filter(
@@ -61,11 +63,11 @@ class BookingViewSet(TenantScopedViewSet):
                 Q(id__icontains=search)
             )
 
-        status_param = self.request.query_params.get('status')
+        status_param = query_params.get('status')
         if status_param and status_param != 'ALL':
             qs = qs.filter(status__iexact=status_param)
 
-        property_param = self.request.query_params.get('property') or self.request.query_params.get('property_id')
+        property_param = query_params.get('property') or query_params.get('property_id')
         if property_param and property_param != 'ALL':
             qs = qs.filter(property_id=property_param)
 

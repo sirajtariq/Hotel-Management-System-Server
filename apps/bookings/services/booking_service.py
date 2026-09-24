@@ -27,11 +27,12 @@ def check_room_availability(room, check_in_dt, check_out_dt, exclude_booking_id=
 
     if conflicts.exists():
         c = conflicts.first()
-        start_str = c.check_in.strftime('%d-%b %I:%M %p') if c.check_in else str(c.check_in_date)
-        end_str = c.check_out.strftime('%d-%b %I:%M %p') if c.check_out else str(c.check_out_date)
-        raise ValidationError({
-            "room": f"Room {room.room_number} is already booked for the selected date range ({start_str} to {end_str})."
-        })
+        if c:
+            start_str = c.check_in.strftime('%d-%b %I:%M %p') if isinstance(c.check_in, datetime) else str(c.check_in_date)
+            end_str = c.check_out.strftime('%d-%b %I:%M %p') if isinstance(c.check_out, datetime) else str(c.check_out_date)
+            raise ValidationError({
+                "room": f"Room {room.room_number} is already booked for the selected date range ({start_str} to {end_str})."
+            })
 
 class BookingService:
     @staticmethod
@@ -54,7 +55,7 @@ class BookingService:
             raise ValidationError({'check_out_date': 'Check-out date must be strictly after check-in date.'})
 
     @staticmethod
-    def is_room_available(room: Room, check_in_date: date, check_out_date: date, exclude_booking_id: int = None) -> bool:
+    def is_room_available(room: Room, check_in_date: date, check_out_date: date, exclude_booking_id: Optional[int] = None) -> bool:
         """
         SSOT function to check room availability and prevent overlapping bookings.
         """
@@ -75,20 +76,20 @@ class BookingService:
         guest_name: str,
         guest_phone: str,
         booking_type: str = 'NIGHTLY',
-        check_in_dt: datetime = None,
-        check_out_dt: datetime = None,
-        check_in_date: date = None,
-        check_out_date: date = None,
+        check_in_dt: Optional[datetime] = None,
+        check_out_dt: Optional[datetime] = None,
+        check_in_date: Optional[date] = None,
+        check_out_date: Optional[date] = None,
         guest_email: str = '',
-        nightly_rate: Decimal = None,
-        rate_applied: Decimal = None,
-        subtotal_amount: Decimal = None,
+        nightly_rate: Optional[Decimal] = None,
+        rate_applied: Optional[Decimal] = None,
+        subtotal_amount: Optional[Decimal] = None,
         discount_type: str = 'FLAT',
         discount_value: Decimal = Decimal('0.00'),
-        discount_amount: Decimal = None,
+        discount_amount: Optional[Decimal] = None,
         tax_rate: Decimal = Decimal('0.00'),
-        tax_amount: Decimal = None,
-        total_amount: Decimal = None,
+        tax_amount: Optional[Decimal] = None,
+        total_amount: Optional[Decimal] = None,
         paid_amount: Decimal = Decimal('0.0'),
         total_duration: str = '',
         commission_recipient=None,
