@@ -4,7 +4,7 @@ from core.permissions_registry import get_all_permission_codes
 
 class RoleService:
     @staticmethod
-    def create_role(tenant, name: str, description: str = '', permissions: list = None, is_system: bool = False) -> Role:
+    def create_role(tenant, name: str, description: str = '', permissions: list | None = None, is_system: bool = False) -> Role:
         permissions = permissions or []
         all_codes = get_all_permission_codes()
         invalid_codes = [p for p in permissions if p not in all_codes]
@@ -21,7 +21,7 @@ class RoleService:
         return role
 
     @staticmethod
-    def update_role(role: Role, name: str = None, description: str = None, permissions: list = None) -> Role:
+    def update_role(role: Role, name: str | None = None, description: str | None = None, permissions: list | None = None) -> Role:
         if role.is_system and name and name != role.name:
             raise ValidationError("Cannot rename system roles.")
 

@@ -7,7 +7,7 @@ from apps.tenants.models import Tenant
 
 class UserService:
     @staticmethod
-    def create_user(username: str, email: str, password: str, role: str = 'GUEST', tenant_id: int = None, first_name: str = '', last_name: str = '', phone_number: str = '') -> User:
+    def create_user(username: str, email: str, password: str, role: str = 'GUEST', tenant_id: int | None = None, first_name: str = '', last_name: str = '', phone_number: str = '') -> User:
         """
         SSOT function to register and create a user.
         """
