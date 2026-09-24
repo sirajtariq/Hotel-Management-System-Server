@@ -2,16 +2,26 @@ from django.db import models
 from django.utils import timezone
 
 
+from django.core.exceptions import ValidationError
+
 class PaymentAccount(models.Model):
     ACCOUNT_TYPE_CHOICES = [
-        ('CASH', 'Cash / Drawer'),
+        ('CASH', 'Cash Drawer'),
         ('BANK', 'Bank Account'),
-        ('WALLET', 'POS Machine / Digital Wallet'),
+        ('ONLINE', 'Online Gateway'),
+        ('OTHER', 'Other'),
     ]
 
     tenant = models.ForeignKey(
         'tenants.Tenant',
         on_delete=models.CASCADE,
+        related_name='payment_accounts'
+    )
+    property = models.ForeignKey(
+        'properties.Property',
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
         related_name='payment_accounts'
     )
     name = models.CharField(max_length=120)
@@ -32,7 +42,16 @@ class PaymentAccount(models.Model):
 
     class Meta:
         ordering = ['-is_default', 'name']
-        unique_together = ('tenant', 'name')
+        unique_together = ('tenant', 'property', 'name')
+
+    def clean(self):
+        if self.account_type == 'CASH' and not self.property:
+            raise ValidationError({"property": "Cash accounts must be assigned to a specific property."})
+        super().clean()
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.name} ({self.get_account_type_display()}) - Balance: PKR {self.current_balance}"
@@ -105,6 +124,7 @@ class AccountTransfer(models.Model):
     transfer_date = models.DateField(default=timezone.now)
     reference_number = models.CharField(max_length=80, blank=True)
     notes = models.TextField(blank=True)
+    receipt_image = models.FileField(upload_to='transfer_receipts/', null=True, blank=True)
     created_by = models.ForeignKey(
         'users.User',
         on_delete=models.SET_NULL,

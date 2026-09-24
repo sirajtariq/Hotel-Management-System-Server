@@ -28,18 +28,54 @@ class AccountHeadViewSet(TenantScopedViewSet):
     }
 
     def get_queryset(self):
-        qs = super().get_queryset()
+        user = self.request.user
+        if not user or not user.is_authenticated:
+            return AccountHead.objects.none()
+
+        role_upper = getattr(user, 'role', '').upper()
+        is_superadmin = bool(getattr(user, 'is_superuser', False) or role_upper in ['SUPERADMIN', 'SUPER_ADMIN'])
+        
+        if is_superadmin:
+            qs = AccountHead.objects.all()
+            query_params = getattr(self.request, 'query_params', getattr(self.request, 'GET', {}))
+            tenant_id = self.request.headers.get('X-Tenant-ID') or query_params.get('tenant_id') or getattr(user, 'tenant_id', None)
+            if tenant_id:
+                qs = qs.filter(tenant_id=tenant_id)
+        elif getattr(user, 'tenant_id', None):
+            qs = AccountHead.objects.filter(tenant_id=user.tenant_id)
+        else:
+            return AccountHead.objects.none()
         user = self.request.user
 
         # Auto-seed default heads for tenant if they don't exist yet
         if user and user.is_authenticated and getattr(user, 'tenant', None):
             if not AccountHead.objects.filter(tenant=user.tenant).exists():
                 ExpenseService.auto_seed_default_account_heads(user.tenant)
-                qs = super().get_queryset()
+                
+                # Re-fetch the queryset using the same logic above
+                if is_superadmin:
+                    qs = AccountHead.objects.all()
+                    query_params = getattr(self.request, 'query_params', getattr(self.request, 'GET', {}))
+                    tenant_id = self.request.headers.get('X-Tenant-ID') or query_params.get('tenant_id') or getattr(user, 'tenant_id', None)
+                    if tenant_id:
+                        qs = qs.filter(tenant_id=tenant_id)
+                elif getattr(user, 'tenant_id', None):
+                    qs = AccountHead.objects.filter(tenant_id=user.tenant_id)
+
+        if user and getattr(user, 'is_authenticated', False) and not getattr(user, 'is_tenant_admin', False):
+            assigned_properties = getattr(user, 'assigned_properties', None)
+            if assigned_properties is not None:
+                assigned_property_ids = assigned_properties.values_list('id', flat=True)
+                qs = qs.filter(Q(property__isnull=True) | Q(property_id__in=assigned_property_ids))
 
         query_params = getattr(self.request, 'query_params', self.request.GET)
         search = query_params.get('search', '').strip()
         is_active = query_params.get('is_active')
+        property_id = query_params.get('property_id')
+
+        if property_id:
+            qs = qs.filter(Q(property__isnull=True) | Q(property_id=property_id))
+
         if search:
             qs = qs.filter(Q(name__icontains=search) | Q(description__icontains=search))
         if is_active is not None:

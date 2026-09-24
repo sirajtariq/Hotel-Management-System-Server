@@ -6,6 +6,7 @@ from django.conf import settings
 
 class AccountHead(models.Model):
     tenant = models.ForeignKey(Tenant, on_delete=models.CASCADE, related_name='account_heads')
+    property = models.ForeignKey(Property, on_delete=models.CASCADE, related_name='account_heads', null=True, blank=True)
     name = models.CharField(max_length=120)
     description = models.TextField(blank=True, default='')
     is_active = models.BooleanField(default=True)
@@ -13,7 +14,7 @@ class AccountHead(models.Model):
 
     class Meta:
         db_table = 'account_heads'
-        unique_together = ('tenant', 'name')
+        unique_together = ('tenant', 'property', 'name')
         ordering = ['name']
 
     def __str__(self):
