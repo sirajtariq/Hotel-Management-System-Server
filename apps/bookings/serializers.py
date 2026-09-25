@@ -1,5 +1,9 @@
+# pyright: ignore[reportMissingImports]
+# pyrefly: ignore [missing-import]
 from decimal import Decimal
 from rest_framework import serializers
+from django.db.models import Q
+from django.utils import timezone
 from apps.bookings.models import Booking
 from apps.accounts.models import PaymentAccount
 from apps.expenses.models import AccountHead
@@ -59,7 +63,8 @@ class BookingListSerializer(serializers.ModelSerializer):
 
     def get_invoice_number(self, obj) -> str:
         tenant_code = getattr(obj.tenant, 'code', '') or 'RS'
-        return f"INV-{tenant_code.upper()}-2026-{obj.id:04d}"
+        year = obj.created_at.year if getattr(obj, 'created_at', None) else timezone.now().year
+        return f"INV-{tenant_code.upper()}-{year}-{obj.id:05d}"
 
     def get_remaining_balance(self, obj) -> Decimal:
         return max(Decimal('0.00'), obj.total_amount - obj.paid_amount)
@@ -277,7 +282,8 @@ class BookingDetailSerializer(serializers.ModelSerializer):
 
     def get_invoice_number(self, obj) -> str:
         tenant_code = getattr(obj.tenant, 'code', '') or 'RS'
-        return f"INV-{tenant_code.upper()}-2026-{obj.id:04d}"
+        year = obj.created_at.year if getattr(obj, 'created_at', None) else timezone.now().year
+        return f"INV-{tenant_code.upper()}-{year}-{obj.id:04d}"
 
     def get_room_type_name(self, obj) -> str:
         if obj.room and getattr(obj.room, 'room_type', None):
@@ -294,37 +300,56 @@ BookingSerializer = BookingDetailSerializer
 class BookingRefundSerializer(serializers.Serializer):
     amount = serializers.DecimalField(max_digits=10, decimal_places=2, min_value=Decimal('0.01'), required=True)
     payment_account = serializers.PrimaryKeyRelatedField(
-        queryset=PaymentAccount.objects.all(),
+        queryset=PaymentAccount.objects.none(),
         required=True,
         error_messages={
             'required': 'Payment Account is strictly required to process a refund.',
-            'does_not_exist': 'Selected payment account does not exist.'
+            'does_not_exist': 'Selected payment account does not exist or is inactive.'
         }
     )
     account_head = serializers.PrimaryKeyRelatedField(
-        queryset=AccountHead.objects.all(),
+        queryset=AccountHead.objects.none(),
         required=True,
         error_messages={
             'required': 'Account Head is strictly required to categorize this refund in financial records.',
-            'does_not_exist': 'Selected account head does not exist.'
+            'does_not_exist': 'Selected account head does not exist or is inactive.'
         }
     )
-    cancellation_fee = serializers.DecimalField(max_digits=10, decimal_places=2, min_value=Decimal('0.00'), default=Decimal('0.00'), required=False)
+    cancellation_fee = serializers.DecimalField(
+        max_digits=10, 
+        decimal_places=2, 
+        min_value=Decimal('0.00'), 
+        default=Decimal('0.00'), 
+        required=False
+    )
     reason = serializers.CharField(max_length=255, required=False, allow_blank=True)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         request = self.context.get('request')
         booking = self.context.get('booking')
-        tenant = None
-        if request and getattr(request, 'user', None) and getattr(request.user, 'tenant', None):
-            tenant = request.user.tenant
-        elif booking and getattr(booking, 'tenant', None):
-            tenant = booking.tenant
+        
+        # Booking's tenant is the absolute truth for a refund
+        tenant = getattr(booking, 'tenant', None)
+        if not tenant and request and getattr(request, 'user', None):
+            tenant = getattr(request.user, 'tenant', None) or getattr(request, 'tenant', None)
 
         if tenant:
-            self.fields['payment_account'].queryset = PaymentAccount.objects.filter(tenant=tenant)
-            self.fields['account_head'].queryset = AccountHead.objects.filter(tenant=tenant)
+            # Global heads only
+            self.fields['account_head'].queryset = AccountHead.objects.filter(  # pyrefly: ignore[missing-attribute]
+                tenant=tenant, 
+                is_active=True
+            )
+            
+            # Hybrid payment accounts: Global Bank OR Booking's Property Cash Drawer
+            booking_property = getattr(booking, 'property', None)
+            account_query = Q(tenant=tenant, is_active=True)
+            if booking_property:
+                account_query &= (Q(property__isnull=True) | Q(property=booking_property))
+            else:
+                account_query &= Q(property__isnull=True)
+
+            self.fields['payment_account'].queryset = PaymentAccount.objects.filter(account_query)  # pyrefly: ignore[missing-attribute]
 
     def to_internal_value(self, data):
         if isinstance(data, dict):
@@ -333,23 +358,39 @@ class BookingRefundSerializer(serializers.Serializer):
                 data['payment_account'] = data['paymentAccountId']
             if 'account_head' not in data and 'accountHeadId' in data:
                 data['account_head'] = data['accountHeadId']
+            if 'cancellation_fee' not in data and 'cancellationFee' in data:
+                data['cancellation_fee'] = data['cancellationFee']
         return super().to_internal_value(data)
 
-    def validate_amount(self, value):
+    def validate(self, attrs):
+        attrs = super().validate(attrs)
         booking = self.context.get('booking')
         if not booking:
             raise serializers.ValidationError("Booking context missing.")
-        
-        # Calculate max refundable balance
+
+        amount = attrs.get('amount', Decimal('0.00'))
+        cancellation_fee = attrs.get('cancellation_fee', Decimal('0.00'))
+        payment_account = attrs.get('payment_account')
+
+        # 1. Total Deduction vs Max Refundable Balance
         paid = Decimal(str(getattr(booking, 'paid_amount', 0) or 0))
         refunded = Decimal(str(getattr(booking, 'total_refunded', 0) or 0))
         max_refundable = paid - refunded
-        if value > max_refundable:
-            raise serializers.ValidationError(
-                f"Refund amount (PKR {value}) exceeds maximum refundable balance (PKR {max_refundable})."
-            )
-        return value
 
+        total_settlement = amount + cancellation_fee
+        if total_settlement > max_refundable:
+            raise serializers.ValidationError({
+                "amount": f"Total settlement (Refund: PKR {amount} + Fee: PKR {cancellation_fee} = PKR {total_settlement}) exceeds maximum refundable balance (PKR {max_refundable})."
+            })
+
+        # 2. Source Account Liquidity Check (Negative Balance Guard)
+        account_balance = Decimal(str(getattr(payment_account, 'current_balance', 0) or 0))
+        if amount > account_balance:
+            raise serializers.ValidationError({
+                "payment_account": f"Insufficient funds in selected account ({payment_account.name}). Available balance: PKR {account_balance}, Required: PKR {amount}."
+            })
+
+        return attrs
 
 class RecordPaymentSerializer(serializers.Serializer):
     amount = serializers.DecimalField(max_digits=12, decimal_places=2, min_value=Decimal('0.01'))

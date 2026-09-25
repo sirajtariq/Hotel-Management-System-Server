@@ -1,0 +1,110 @@
+﻿c:\Users\Maanz-AI\Desktop\Projects\Hotel-management-system\Hotel-Management-System-Server\apps\bookings\serializers.py
+  c:\Users\Maanz-AI\Desktop\Projects\Hotel-management-system\Hotel-Management-System-Server\apps\bookings\serializers.py:2:6 - error: Import "rest_framework" could not be resolved (reportMissingImports)
+  c:\Users\Maanz-AI\Desktop\Projects\Hotel-management-system\Hotel-Management-System-Server\apps\bookings\serializers.py:195:14 - error: Import "django.db.models" could not be resolved (reportMissingImports)
+c:\Users\Maanz-AI\Desktop\Projects\Hotel-management-system\Hotel-Management-System-Server\apps\bookings\views.py
+  c:\Users\Maanz-AI\Desktop\Projects\Hotel-management-system\Hotel-Management-System-Server\apps\bookings\views.py:2:6 - error: Import "django.db" could not be resolved (reportMissingImports)
+  c:\Users\Maanz-AI\Desktop\Projects\Hotel-management-system\Hotel-Management-System-Server\apps\bookings\views.py:3:6 - error: Import "rest_framework" could not be resolved (reportMissingImports)
+  c:\Users\Maanz-AI\Desktop\Projects\Hotel-management-system\Hotel-Management-System-Server\apps\bookings\views.py:4:6 - error: Import "rest_framework.decorators" could not be resolved (reportMissingImports)
+  c:\Users\Maanz-AI\Desktop\Projects\Hotel-management-system\Hotel-Management-System-Server\apps\bookings\views.py:5:6 - error: Import "rest_framework.response" could not be resolved (reportMissingImports)
+  c:\Users\Maanz-AI\Desktop\Projects\Hotel-management-system\Hotel-Management-System-Server\apps\bookings\views.py:6:6 - error: Import "rest_framework.permissions" could not be resolved (reportMissingImports)
+  c:\Users\Maanz-AI\Desktop\Projects\Hotel-management-system\Hotel-Management-System-Server\apps\bookings\views.py:58:18 - error: Import "django.db.models" could not be resolved (reportMissingImports)
+  c:\Users\Maanz-AI\Desktop\Projects\Hotel-management-system\Hotel-Management-System-Server\apps\bookings\views.py:90:18 - error: Import "rest_framework" could not be resolved (reportMissingImports)
+  c:\Users\Maanz-AI\Desktop\Projects\Hotel-management-system\Hotel-Management-System-Server\apps\bookings\views.py:108:18 - error: Import "rest_framework" could not be resolved (reportMissingImports)
+  c:\Users\Maanz-AI\Desktop\Projects\Hotel-management-system\Hotel-Management-System-Server\apps\bookings\views.py:372:18 - error: Import "django.utils" could not be resolved (reportMissingImports)
+c:\Users\Maanz-AI\Desktop\Projects\Hotel-management-system\Hotel-Management-System-Server\apps\restaurant\serializers.py
+  c:\Users\Maanz-AI\Desktop\Projects\Hotel-management-system\Hotel-Management-System-Server\apps\restaurant\serializers.py:1:6 - error: Import "rest_framework" could not be resolved (reportMissingImports)
+c:\Users\Maanz-AI\Desktop\Projects\Hotel-management-system\Hotel-Management-System-Server\apps\restaurant\services\order_service.py
+  c:\Users\Maanz-AI\Desktop\Projects\Hotel-management-system\Hotel-Management-System-Server\apps\restaurant\services\order_service.py:3:6 - error: Import "django.utils" could not be resolved (reportMissingImports)
+  c:\Users\Maanz-AI\Desktop\Projects\Hotel-management-system\Hotel-Management-System-Server\apps\restaurant\services\order_service.py:4:6 - error: Import "django.db" could not be resolved (reportMissingImports)
+  c:\Users\Maanz-AI\Desktop\Projects\Hotel-management-system\Hotel-Management-System-Server\apps\restaurant\services\order_service.py:5:6 - error: Import "rest_framework.exceptions" could not be resolved (reportMissingImports)
+c:\Users\Maanz-AI\Desktop\Projects\Hotel-management-system\Hotel-Management-System-Server\apps\restaurant\views.py
+  c:\Users\Maanz-AI\Desktop\Projects\Hotel-management-system\Hotel-Management-System-Server\apps\restaurant\views.py:2:6 - error: Import "django.db" could not be resolved (reportMissingImports)
+  c:\Users\Maanz-AI\Desktop\Projects\Hotel-management-system\Hotel-Management-System-Server\apps\restaurant\views.py:3:6 - error: Import "django.utils" could not be resolved (reportMissingImports)
+  c:\Users\Maanz-AI\Desktop\Projects\Hotel-management-system\Hotel-Management-System-Server\apps\restaurant\views.py:4:6 - error: Import "rest_framework" could not be resolved (reportMissingImports)
+  c:\Users\Maanz-AI\Desktop\Projects\Hotel-management-system\Hotel-Management-System-Server\apps\restaurant\views.py:5:6 - error: Import "rest_framework.decorators" could not be resolved (reportMissingImports)
+  c:\Users\Maanz-AI\Desktop\Projects\Hotel-management-system\Hotel-Management-System-Server\apps\restaurant\views.py:6:6 - error: Import "rest_framework.response" could not be resolved (reportMissingImports)
+  c:\Users\Maanz-AI\Desktop\Projects\Hotel-management-system\Hotel-Management-System-Server\apps\restaurant\views.py:7:6 - error: Import "rest_framework.exceptions" could not be resolved (reportMissingImports)
+c:\Users\Maanz-AI\Desktop\Projects\Hotel-management-system\Hotel-Management-System-Server\apps\rooms\models.py
+  c:\Users\Maanz-AI\Desktop\Projects\Hotel-management-system\Hotel-Management-System-Server\apps\rooms\models.py:1:6 - error: Import "django.db" could not be resolved (reportMissingImports)
+  c:\Users\Maanz-AI\Desktop\Projects\Hotel-management-system\Hotel-Management-System-Server\apps\rooms\models.py:2:6 - error: Import "django.core.cache" could not be resolved (reportMissingImports)
+c:\Users\Maanz-AI\Desktop\Projects\Hotel-management-system\Hotel-Management-System-Server\apps\rooms\services\room_service.py
+  c:\Users\Maanz-AI\Desktop\Projects\Hotel-management-system\Hotel-Management-System-Server\apps\rooms\services\room_service.py:2:6 - error: Import "rest_framework.exceptions" could not be resolved (reportMissingImports)
+  c:\Users\Maanz-AI\Desktop\Projects\Hotel-management-system\Hotel-Management-System-Server\apps\rooms\services\room_service.py:16:32 - error: Expression of type "None" cannot be assigned to parameter of type "Decimal"
+  ┬á┬á"None" is not assignable to "Decimal" (reportArgumentType)
+  c:\Users\Maanz-AI\Desktop\Projects\Hotel-management-system\Hotel-Management-System-Server\apps\rooms\services\room_service.py:18:27 - error: Expression of type "None" cannot be assigned to parameter of type "list[Unknown]"
+  ┬á┬á"None" is not assignable to "list[Unknown]" (reportArgumentType)
+  c:\Users\Maanz-AI\Desktop\Projects\Hotel-management-system\Hotel-Management-System-Server\apps\rooms\services\room_service.py:61:27 - error: Expression of type "None" cannot be assigned to parameter of type "list[Unknown]"
+  ┬á┬á"None" is not assignable to "list[Unknown]" (reportArgumentType)
+  c:\Users\Maanz-AI\Desktop\Projects\Hotel-management-system\Hotel-Management-System-Server\apps\rooms\services\room_service.py:62:31 - error: Expression of type "None" cannot be assigned to parameter of type "Decimal"
+  ┬á┬á"None" is not assignable to "Decimal" (reportArgumentType)
+  c:\Users\Maanz-AI\Desktop\Projects\Hotel-management-system\Hotel-Management-System-Server\apps\rooms\services\room_service.py:63:32 - error: Expression of type "None" cannot be assigned to parameter of type "Decimal"
+  ┬á┬á"None" is not assignable to "Decimal" (reportArgumentType)
+  c:\Users\Maanz-AI\Desktop\Projects\Hotel-management-system\Hotel-Management-System-Server\apps\rooms\services\room_service.py:64:35 - error: Expression of type "None" cannot be assigned to parameter of type "bool"
+  ┬á┬á"None" is not assignable to "bool" (reportArgumentType)
+c:\Users\Maanz-AI\Desktop\Projects\Hotel-management-system\Hotel-Management-System-Server\apps\staff\services\staff_service.py
+  c:\Users\Maanz-AI\Desktop\Projects\Hotel-management-system\Hotel-Management-System-Server\apps\staff\services\staff_service.py:3:6 - error: Import "django.db" could not be resolved (reportMissingImports)
+  c:\Users\Maanz-AI\Desktop\Projects\Hotel-management-system\Hotel-Management-System-Server\apps\staff\services\staff_service.py:4:6 - error: Import "django.db.models" could not be resolved (reportMissingImports)
+  c:\Users\Maanz-AI\Desktop\Projects\Hotel-management-system\Hotel-Management-System-Server\apps\staff\services\staff_service.py:5:6 - error: Import "rest_framework.exceptions" could not be resolved (reportMissingImports)
+  c:\Users\Maanz-AI\Desktop\Projects\Hotel-management-system\Hotel-Management-System-Server\apps\staff\services\staff_service.py:19:34 - error: Expression of type "None" cannot be assigned to parameter of type "Property"
+  ┬á┬á"None" is not assignable to "Property" (reportArgumentType)
+  c:\Users\Maanz-AI\Desktop\Projects\Hotel-management-system\Hotel-Management-System-Server\apps\staff\services\staff_service.py:22:28 - error: Expression of type "None" cannot be assigned to parameter of type "date"
+  ┬á┬á"None" is not assignable to "date" (reportArgumentType)
+  c:\Users\Maanz-AI\Desktop\Projects\Hotel-management-system\Hotel-Management-System-Server\apps\staff\services\staff_service.py:25:25 - error: Expression of type "None" cannot be assigned to parameter of type "str"
+  ┬á┬á"None" is not assignable to "str" (reportArgumentType)
+  c:\Users\Maanz-AI\Desktop\Projects\Hotel-management-system\Hotel-Management-System-Server\apps\staff\services\staff_service.py:26:22 - error: Expression of type "None" cannot be assigned to parameter of type "str"
+  ┬á┬á"None" is not assignable to "str" (reportArgumentType)
+  c:\Users\Maanz-AI\Desktop\Projects\Hotel-management-system\Hotel-Management-System-Server\apps\staff\services\staff_service.py:27:25 - error: Expression of type "None" cannot be assigned to parameter of type "str"
+  ┬á┬á"None" is not assignable to "str" (reportArgumentType)
+  c:\Users\Maanz-AI\Desktop\Projects\Hotel-management-system\Hotel-Management-System-Server\apps\staff\services\staff_service.py:28:31 - error: Expression of type "None" cannot be assigned to parameter of type "int"
+  ┬á┬á"None" is not assignable to "int" (reportArgumentType)
+  c:\Users\Maanz-AI\Desktop\Projects\Hotel-management-system\Hotel-Management-System-Server\apps\staff\services\staff_service.py:106:21 - error: Expression of type "None" cannot be assigned to parameter of type "str"
+  ┬á┬á"None" is not assignable to "str" (reportArgumentType)
+  c:\Users\Maanz-AI\Desktop\Projects\Hotel-management-system\Hotel-Management-System-Server\apps\staff\services\staff_service.py:107:25 - error: Expression of type "None" cannot be assigned to parameter of type "str"
+  ┬á┬á"None" is not assignable to "str" (reportArgumentType)
+  c:\Users\Maanz-AI\Desktop\Projects\Hotel-management-system\Hotel-Management-System-Server\apps\staff\services\staff_service.py:108:29 - error: Expression of type "None" cannot be assigned to parameter of type "str"
+  ┬á┬á"None" is not assignable to "str" (reportArgumentType)
+  c:\Users\Maanz-AI\Desktop\Projects\Hotel-management-system\Hotel-Management-System-Server\apps\staff\services\staff_service.py:109:34 - error: Expression of type "None" cannot be assigned to parameter of type "Property"
+  ┬á┬á"None" is not assignable to "Property" (reportArgumentType)
+  c:\Users\Maanz-AI\Desktop\Projects\Hotel-management-system\Hotel-Management-System-Server\apps\staff\services\staff_service.py:110:35 - error: Expression of type "None" cannot be assigned to parameter of type "Decimal"
+  ┬á┬á"None" is not assignable to "Decimal" (reportArgumentType)
+  c:\Users\Maanz-AI\Desktop\Projects\Hotel-management-system\Hotel-Management-System-Server\apps\staff\services\staff_service.py:111:27 - error: Expression of type "None" cannot be assigned to parameter of type "str"
+  ┬á┬á"None" is not assignable to "str" (reportArgumentType)
+  c:\Users\Maanz-AI\Desktop\Projects\Hotel-management-system\Hotel-Management-System-Server\apps\staff\services\staff_service.py:112:28 - error: Expression of type "None" cannot be assigned to parameter of type "date"
+  ┬á┬á"None" is not assignable to "date" (reportArgumentType)
+  c:\Users\Maanz-AI\Desktop\Projects\Hotel-management-system\Hotel-Management-System-Server\apps\staff\services\staff_service.py:113:27 - error: Expression of type "None" cannot be assigned to parameter of type "bool"
+  ┬á┬á"None" is not assignable to "bool" (reportArgumentType)
+  c:\Users\Maanz-AI\Desktop\Projects\Hotel-management-system\Hotel-Management-System-Server\apps\staff\services\staff_service.py:114:30 - error: Expression of type "None" cannot be assigned to parameter of type "bool"
+  ┬á┬á"None" is not assignable to "bool" (reportArgumentType)
+  c:\Users\Maanz-AI\Desktop\Projects\Hotel-management-system\Hotel-Management-System-Server\apps\staff\services\staff_service.py:115:25 - error: Expression of type "None" cannot be assigned to parameter of type "str"
+  ┬á┬á"None" is not assignable to "str" (reportArgumentType)
+  c:\Users\Maanz-AI\Desktop\Projects\Hotel-management-system\Hotel-Management-System-Server\apps\staff\services\staff_service.py:116:22 - error: Expression of type "None" cannot be assigned to parameter of type "str"
+  ┬á┬á"None" is not assignable to "str" (reportArgumentType)
+  c:\Users\Maanz-AI\Desktop\Projects\Hotel-management-system\Hotel-Management-System-Server\apps\staff\services\staff_service.py:117:25 - error: Expression of type "None" cannot be assigned to parameter of type "str"
+  ┬á┬á"None" is not assignable to "str" (reportArgumentType)
+  c:\Users\Maanz-AI\Desktop\Projects\Hotel-management-system\Hotel-Management-System-Server\apps\staff\services\staff_service.py:118:31 - error: Expression of type "None" cannot be assigned to parameter of type "int"
+  ┬á┬á"None" is not assignable to "int" (reportArgumentType)
+  c:\Users\Maanz-AI\Desktop\Projects\Hotel-management-system\Hotel-Management-System-Server\apps\staff\services\staff_service.py:236:70 - error: Expression of type "None" cannot be assigned to parameter of type "int"
+  ┬á┬á"None" is not assignable to "int" (reportArgumentType)
+c:\Users\Maanz-AI\Desktop\Projects\Hotel-management-system\Hotel-Management-System-Server\apps\tenants\services\tenant_service.py
+  c:\Users\Maanz-AI\Desktop\Projects\Hotel-management-system\Hotel-Management-System-Server\apps\tenants\services\tenant_service.py:2:6 - error: Import "django.db" could not be resolved (reportMissingImports)
+  c:\Users\Maanz-AI\Desktop\Projects\Hotel-management-system\Hotel-Management-System-Server\apps\tenants\services\tenant_service.py:3:6 - error: Import "django.utils" could not be resolved (reportMissingImports)
+  c:\Users\Maanz-AI\Desktop\Projects\Hotel-management-system\Hotel-Management-System-Server\apps\tenants\services\tenant_service.py:4:6 - error: Import "django.utils.text" could not be resolved (reportMissingImports)
+  c:\Users\Maanz-AI\Desktop\Projects\Hotel-management-system\Hotel-Management-System-Server\apps\tenants\services\tenant_service.py:5:6 - error: Import "rest_framework.exceptions" could not be resolved (reportMissingImports)
+  c:\Users\Maanz-AI\Desktop\Projects\Hotel-management-system\Hotel-Management-System-Server\apps\tenants\services\tenant_service.py:45:21 - error: Expression of type "None" cannot be assigned to parameter of type "str"
+  ┬á┬á"None" is not assignable to "str" (reportArgumentType)
+  c:\Users\Maanz-AI\Desktop\Projects\Hotel-management-system\Hotel-Management-System-Server\apps\tenants\services\tenant_service.py:54:31 - error: Expression of type "None" cannot be assigned to parameter of type "str"
+  ┬á┬á"None" is not assignable to "str" (reportArgumentType)
+  c:\Users\Maanz-AI\Desktop\Projects\Hotel-management-system\Hotel-Management-System-Server\apps\tenants\services\tenant_service.py:55:31 - error: Expression of type "None" cannot be assigned to parameter of type "str"
+  ┬á┬á"None" is not assignable to "str" (reportArgumentType)
+  c:\Users\Maanz-AI\Desktop\Projects\Hotel-management-system\Hotel-Management-System-Server\apps\tenants\services\tenant_service.py:56:28 - error: Expression of type "None" cannot be assigned to parameter of type "str"
+  ┬á┬á"None" is not assignable to "str" (reportArgumentType)
+  c:\Users\Maanz-AI\Desktop\Projects\Hotel-management-system\Hotel-Management-System-Server\apps\tenants\services\tenant_service.py:60:31 - error: Expression of type "None" cannot be assigned to parameter of type "int"
+  ┬á┬á"None" is not assignable to "int" (reportArgumentType)
+  c:\Users\Maanz-AI\Desktop\Projects\Hotel-management-system\Hotel-Management-System-Server\apps\tenants\services\tenant_service.py:61:26 - error: Expression of type "None" cannot be assigned to parameter of type "int"
+  ┬á┬á"None" is not assignable to "int" (reportArgumentType)
+  c:\Users\Maanz-AI\Desktop\Projects\Hotel-management-system\Hotel-Management-System-Server\apps\tenants\services\tenant_service.py:62:26 - error: Expression of type "None" cannot be assigned to parameter of type "int"
+  ┬á┬á"None" is not assignable to "int" (reportArgumentType)
+c:\Users\Maanz-AI\Desktop\Projects\Hotel-management-system\Hotel-Management-System-Server\core\viewsets.py
+  c:\Users\Maanz-AI\Desktop\Projects\Hotel-management-system\Hotel-Management-System-Server\core\viewsets.py:1:6 - error: Import "rest_framework" could not be resolved (reportMissingImports)
+  c:\Users\Maanz-AI\Desktop\Projects\Hotel-management-system\Hotel-Management-System-Server\core\viewsets.py:3:6 - error: Import "rest_framework.permissions" could not be resolved (reportMissingImports)
+66 errors, 0 warnings, 0 informations

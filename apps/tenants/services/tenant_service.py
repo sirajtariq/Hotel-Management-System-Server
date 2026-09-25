@@ -1,3 +1,5 @@
+# pyright: ignore[reportMissingImports]
+# pyrefly: ignore [missing-import]
 import datetime
 from django.db import transaction
 from django.utils import timezone
@@ -42,7 +44,7 @@ class TenantService:
     @transaction.atomic
     def create_tenant(
         name: str,
-        slug: str = None,
+        slug: str | None = None,
         subscription_plan: str = 'BASIC',
         billing_type: str = 'MONTHLY',
         price_amount: float = 0.00,
@@ -51,15 +53,15 @@ class TenantService:
         notes: str = '',
         next_due_date=None,
         grace_period_days: int = 3,
-        admin_username: str = None,
-        admin_password: str = None,
-        admin_email: str = None,
+        admin_username: str | None = None,
+        admin_password: str | None = None,
+        admin_email: str | None = None,
         admin_first_name: str = '',
         admin_last_name: str = '',
         is_active: bool = True,
-        max_properties: int = None,
-        max_rooms: int = None,
-        max_users: int = None
+        max_properties: int | None = None,
+        max_rooms: int | None = None,
+        max_users: int | None = None
     ) -> Tenant:
         """
         SSOT function to create a new tenant company account wrapped in an atomic transaction.

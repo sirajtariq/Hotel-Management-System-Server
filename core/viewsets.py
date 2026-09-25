@@ -1,3 +1,5 @@
+# pyright: ignore[reportMissingImports]
+# pyrefly: ignore [missing-import]
 from rest_framework import viewsets, exceptions
 from core.permissions import HasTenantAccess
 from rest_framework.permissions import BasePermission

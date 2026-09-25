@@ -1,3 +1,5 @@
+# pyright: ignore[reportMissingImports]
+# pyrefly: ignore [missing-import]
 from rest_framework import serializers
 from apps.restaurant.models import (
     Category, MenuItem, MenuItemVariation,

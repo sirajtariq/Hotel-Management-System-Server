@@ -1,3 +1,5 @@
+# pyright: ignore[reportMissingImports]
+# pyrefly: ignore [missing-import]
 from decimal import Decimal
 from django.db import transaction
 from rest_framework import status
@@ -314,7 +316,7 @@ class BookingViewSet(TenantScopedViewSet):
 
     @action(detail=True, methods=['post'], url_path='record_payment')
     def record_payment_alias(self, request, pk=None):
-        return self.record_payment(request, pk=pk)
+        return self.record_payment(request=request, pk=pk)
 
     @action(detail=True, methods=['post'], url_path='refund')
     def process_refund(self, request, pk=None):
@@ -413,7 +415,7 @@ class BookingViewSet(TenantScopedViewSet):
 
     @action(detail=True, methods=['post'], url_path='process-refund')
     def process_refund_alias(self, request, pk=None):
-        return self.process_refund(request, pk=pk)
+        return self.process_refund(request=request, pk=pk)
 
     @action(detail=True, methods=['get'], url_path='invoice')
     def invoice(self, request, pk=None):
