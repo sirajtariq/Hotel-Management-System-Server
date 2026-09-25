@@ -62,19 +62,9 @@ class AccountHeadViewSet(TenantScopedViewSet):
                 elif getattr(user, 'tenant_id', None):
                     qs = AccountHead.objects.filter(tenant_id=user.tenant_id)
 
-        if user and getattr(user, 'is_authenticated', False) and not getattr(user, 'is_tenant_admin', False):
-            assigned_properties = getattr(user, 'assigned_properties', None)
-            if assigned_properties is not None:
-                assigned_property_ids = assigned_properties.values_list('id', flat=True)
-                qs = qs.filter(Q(property__isnull=True) | Q(property_id__in=assigned_property_ids))
-
         query_params = getattr(self.request, 'query_params', self.request.GET)
         search = query_params.get('search', '').strip()
         is_active = query_params.get('is_active')
-        property_id = query_params.get('property_id')
-
-        if property_id:
-            qs = qs.filter(Q(property__isnull=True) | Q(property_id=property_id))
 
         if search:
             qs = qs.filter(Q(name__icontains=search) | Q(description__icontains=search))

@@ -6,12 +6,10 @@ class AccountHeadSerializer(serializers.ModelSerializer):
     expenses_count = serializers.IntegerField(read_only=True, default=0)
     total_spent_amount = serializers.DecimalField(max_digits=12, decimal_places=2, read_only=True, default=Decimal('0.00'))
 
-    property_name = serializers.CharField(source='property.name', read_only=True)
-
     class Meta:
         model = AccountHead
         fields = [
-            'id', 'tenant', 'property', 'property_name', 'name', 'description',
+            'id', 'tenant', 'name', 'description',
             'is_active', 'created_at', 'expenses_count', 'total_spent_amount'
         ]
         read_only_fields = ['id', 'tenant', 'created_at', 'updated_at']

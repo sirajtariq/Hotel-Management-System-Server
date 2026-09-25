@@ -49,9 +49,10 @@ class PaymentAccountViewSet(TenantScopedViewSet):
         else:
             return PaymentAccount.objects.none()
         
-        if not user.is_tenant_admin:
+        if not getattr(user, 'is_tenant_admin', False):
             from django.db.models import Q
-            assigned_property_ids = user.assigned_properties.values_list('id', flat=True)
+            assigned_properties = getattr(user, 'assigned_properties', None)
+            assigned_property_ids = assigned_properties.values_list('id', flat=True) if assigned_properties else []
             qs = qs.filter(Q(property__isnull=True) | Q(property_id__in=assigned_property_ids))
 
         account_type = self.request.query_params.get('account_type')
@@ -88,7 +89,7 @@ class PaymentAccountViewSet(TenantScopedViewSet):
             
         user = self.request.user
         property_obj = serializer.validated_data.get('property')
-        if not user.is_tenant_admin and not property_obj:
+        if not getattr(user, 'is_tenant_admin', False) and not property_obj:
             from rest_framework import serializers as drf_serializers
             raise drf_serializers.ValidationError({"property": "Non-Tenant Admins cannot create Global / Chain-wide accounts."})
 
@@ -97,7 +98,7 @@ class PaymentAccountViewSet(TenantScopedViewSet):
     def perform_update(self, serializer):
         user = self.request.user
         property_obj = serializer.validated_data.get('property', serializer.instance.property)
-        if not user.is_tenant_admin and not property_obj:
+        if not getattr(user, 'is_tenant_admin', False) and not property_obj:
             from rest_framework import serializers as drf_serializers
             raise drf_serializers.ValidationError({"property": "Non-Tenant Admins cannot manage Global / Chain-wide accounts."})
             
@@ -113,7 +114,7 @@ class PaymentAccountViewSet(TenantScopedViewSet):
         
         if not account.property:
             # Global account: only tenant admin can set as default
-            if not request.user.is_tenant_admin:
+            if not getattr(request.user, 'is_tenant_admin', False):
                 from rest_framework.exceptions import PermissionDenied
                 raise PermissionDenied("Only Tenant Admin can set a Global account as default.")
             # Unset default for all OTHER global accounts
