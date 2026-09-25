@@ -110,7 +110,18 @@ class PaymentAccountViewSet(TenantScopedViewSet):
     def set_as_default(self, request, pk=None):
         account = self.get_object()
         tenant = account.tenant
-        PaymentAccount.objects.filter(tenant=tenant).update(is_default=False)
+        
+        if not account.property:
+            # Global account: only tenant admin can set as default
+            if not request.user.is_tenant_admin:
+                from rest_framework.exceptions import PermissionDenied
+                raise PermissionDenied("Only Tenant Admin can set a Global account as default.")
+            # Unset default for all OTHER global accounts
+            PaymentAccount.objects.filter(tenant=tenant, property__isnull=True).update(is_default=False)
+        else:
+            # Property account: unset default for all OTHER accounts in this property
+            PaymentAccount.objects.filter(tenant=tenant, property=account.property).update(is_default=False)
+            
         account.is_default = True
         account.save(update_fields=['is_default'])
         serializer = self.get_serializer(account)

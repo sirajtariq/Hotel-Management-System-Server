@@ -27,20 +27,6 @@ class PaymentAccountSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ['id', 'tenant', 'current_balance', 'created_at']
 
-    def to_representation(self, instance):
-        data = super().to_representation(instance)
-        request = self.context.get('request')
-        if request and hasattr(request, 'user'):
-            user = request.user
-            if not user.is_tenant_admin:
-                if instance.account_type != 'CASH':
-                    data.pop('current_balance', None)
-                else:
-                    assigned_ids = user.assigned_properties.values_list('id', flat=True)
-                    if instance.property_id not in assigned_ids:
-                        data.pop('current_balance', None)
-        return data
-
     def create(self, validated_data):
         # Set current balance to opening balance on creation
         validated_data['current_balance'] = validated_data.get('opening_balance', 0)
