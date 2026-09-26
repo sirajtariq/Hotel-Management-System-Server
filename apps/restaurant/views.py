@@ -1,3 +1,5 @@
+# pyright: ignore[reportMissingImports]
+# pyrefly: ignore [missing-import]
 from decimal import Decimal
 from django.db import transaction, IntegrityError
 from django.utils import timezone

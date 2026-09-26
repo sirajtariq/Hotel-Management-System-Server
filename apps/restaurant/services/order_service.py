@@ -1,3 +1,5 @@
+# pyright: ignore[reportMissingImports]
+# pyrefly: ignore [missing-import]
 from decimal import Decimal
 import uuid
 from django.utils import timezone

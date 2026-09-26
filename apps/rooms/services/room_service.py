@@ -1,3 +1,5 @@
+# pyright: ignore[reportMissingImports]
+# pyrefly: ignore [missing-import]
 from decimal import Decimal
 from rest_framework.exceptions import ValidationError
 from apps.rooms.models import Room, RoomType
@@ -13,9 +15,9 @@ class RoomService:
         base_price_per_night: Decimal,
         max_occupancy: int = 2,
         description: str = '',
-        hourly_rate: Decimal = None,
+        hourly_rate: Decimal | None = None,
         is_hourly_allowed: bool = True,
-        amenities: list = None
+        amenities: list | None = None
     ) -> RoomType:
         """
         SSOT function to create a room type.
@@ -58,10 +60,10 @@ class RoomService:
         room_number: str,
         floor: str = '',
         status: str = 'AVAILABLE',
-        amenities: list = None,
-        base_price: Decimal = None,
-        hourly_rate: Decimal = None,
-        is_hourly_allowed: bool = None
+        amenities: list | None = None,
+        base_price: Decimal | None = None,
+        hourly_rate: Decimal | None = None,
+        is_hourly_allowed: bool | None = None
     ) -> Room:
         """
         SSOT function to create a room.

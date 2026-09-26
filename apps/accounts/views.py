@@ -4,7 +4,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from core.viewsets import TenantScopedViewSet
-from core.permissions import HasTenantAccess
+from core.permissions import HasTenantAccess, HasModulePermission
 from apps.accounts.models import PaymentAccount, AccountTransaction, AccountTransfer
 from apps.accounts.serializers import (
     PaymentAccountSerializer,
@@ -18,13 +18,47 @@ from apps.accounts.services.account_service import AccountService
 class PaymentAccountViewSet(TenantScopedViewSet):
     queryset = PaymentAccount.objects.all()
     serializer_class = PaymentAccountSerializer
-    permission_classes = [IsAuthenticated, HasTenantAccess]
+    permission_classes = [IsAuthenticated, HasTenantAccess, HasModulePermission]
+    action_permissions = {
+        'list': 'accounts:view',
+        'retrieve': 'accounts:view',
+        'create': 'accounts:manage',
+        'update': 'accounts:manage',
+        'partial_update': 'accounts:manage',
+        'destroy': 'accounts:manage',
+        'set_as_default': 'accounts:manage',
+        'transactions_ledger': 'accounts:view',
+    }
 
     def get_queryset(self):
-        qs = super().get_queryset()
+        user = self.request.user
+        if not user or not user.is_authenticated:
+            return PaymentAccount.objects.none()
+
+        role_upper = getattr(user, 'role', '').upper()
+        is_superadmin = bool(getattr(user, 'is_superuser', False) or role_upper in ['SUPERADMIN', 'SUPER_ADMIN'])
+        
+        if is_superadmin:
+            qs = PaymentAccount.objects.all()
+            query_params = getattr(self.request, 'query_params', getattr(self.request, 'GET', {}))
+            tenant_id = self.request.headers.get('X-Tenant-ID') or query_params.get('tenant_id') or getattr(user, 'tenant_id', None)
+            if tenant_id:
+                qs = qs.filter(tenant_id=tenant_id)
+        elif getattr(user, 'tenant_id', None):
+            qs = PaymentAccount.objects.filter(tenant_id=user.tenant_id)
+        else:
+            return PaymentAccount.objects.none()
+        
+        if not getattr(user, 'is_tenant_admin', False):
+            from django.db.models import Q
+            assigned_properties = getattr(user, 'assigned_properties', None)
+            assigned_property_ids = assigned_properties.values_list('id', flat=True) if assigned_properties else []
+            qs = qs.filter(Q(property__isnull=True) | Q(property_id__in=assigned_property_ids))
+
         account_type = self.request.query_params.get('account_type')
         is_active = self.request.query_params.get('is_active')
         search = self.request.query_params.get('search', '').strip()
+        property_id = self.request.query_params.get('property_id')
 
         if account_type:
             qs = qs.filter(account_type=account_type)
@@ -33,9 +67,13 @@ class PaymentAccountViewSet(TenantScopedViewSet):
                 qs = qs.filter(is_active=True)
             elif is_active.lower() == 'false':
                 qs = qs.filter(is_active=False)
+        if property_id:
+            from django.db.models import Q
+            qs = qs.filter(Q(property__isnull=True) | Q(property_id=property_id))
 
         if search:
-            qs = qs.filter(name__icontains=search) | qs.filter(bank_name__icontains=search)
+            from django.db.models import Q
+            qs = qs.filter(Q(name__icontains=search) | Q(bank_name__icontains=search))
 
         return qs.annotate(transactions_count=Count('transactions')).order_by('-is_default', 'name')
 
@@ -48,10 +86,22 @@ class PaymentAccountViewSet(TenantScopedViewSet):
         if not tenant:
             from rest_framework import serializers as drf_serializers
             raise drf_serializers.ValidationError({"tenant": "Authenticated user is not linked to any active tenant."})
+            
+        user = self.request.user
+        property_obj = serializer.validated_data.get('property')
+        if not getattr(user, 'is_tenant_admin', False) and not property_obj:
+            from rest_framework import serializers as drf_serializers
+            raise drf_serializers.ValidationError({"property": "Non-Tenant Admins cannot create Global / Chain-wide accounts."})
 
         serializer.save(tenant=tenant)
 
     def perform_update(self, serializer):
+        user = self.request.user
+        property_obj = serializer.validated_data.get('property', serializer.instance.property)
+        if not getattr(user, 'is_tenant_admin', False) and not property_obj:
+            from rest_framework import serializers as drf_serializers
+            raise drf_serializers.ValidationError({"property": "Non-Tenant Admins cannot manage Global / Chain-wide accounts."})
+            
         instance = serializer.save()
         if not instance.is_active and instance.is_default:
             instance.is_default = False
@@ -61,7 +111,18 @@ class PaymentAccountViewSet(TenantScopedViewSet):
     def set_as_default(self, request, pk=None):
         account = self.get_object()
         tenant = account.tenant
-        PaymentAccount.objects.filter(tenant=tenant).update(is_default=False)
+        
+        if not account.property:
+            # Global account: only tenant admin can set as default
+            if not getattr(request.user, 'is_tenant_admin', False):
+                from rest_framework.exceptions import PermissionDenied
+                raise PermissionDenied("Only Tenant Admin can set a Global account as default.")
+            # Unset default for all OTHER global accounts
+            PaymentAccount.objects.filter(tenant=tenant, property__isnull=True).update(is_default=False)
+        else:
+            # Property account: unset default for all OTHER accounts in this property
+            PaymentAccount.objects.filter(tenant=tenant, property=account.property).update(is_default=False)
+            
         account.is_default = True
         account.save(update_fields=['is_default'])
         serializer = self.get_serializer(account)
@@ -71,6 +132,12 @@ class PaymentAccountViewSet(TenantScopedViewSet):
     def transactions_ledger(self, request, pk=None):
         account = self.get_object()
         qs = AccountTransaction.objects.filter(tenant=account.tenant, account=account).order_by('-created_at')
+        
+        page = self.paginate_queryset(qs)
+        if page is not None:
+            serializer = AccountTransactionSerializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
         serializer = AccountTransactionSerializer(qs, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -114,6 +181,7 @@ class AccountTransferViewSet(TenantScopedViewSet):
             transfer_date=data.get('transfer_date'),
             reference_number=data.get('reference_number', ''),
             notes=data.get('notes', ''),
+            receipt_image=data.get('receipt_image'),
             user=request.user,
         )
 

@@ -29,6 +29,30 @@ class PropertyViewSet(TenantScopedViewSet):
 
     def get_queryset(self):
         qs = super().get_queryset()
+        
+        user = self.request.user
+        if user and user.is_authenticated:
+            role_upper = getattr(user, 'role', '').upper()
+            is_admin = getattr(user, 'is_tenant_admin', False) or role_upper in ['SUPERADMIN', 'SUPER_ADMIN', 'TENANT_ADMIN']
+            if not is_admin:
+                prop_ids = set()
+                if hasattr(user, 'assigned_properties') and user.assigned_properties.exists():
+                    prop_ids.update(user.assigned_properties.values_list('id', flat=True))
+                
+                staff_profile = getattr(user, 'staff_profile', None)
+                if staff_profile and getattr(staff_profile, 'property_id', None):
+                    prop_ids.add(staff_profile.property_id)
+                    
+                if getattr(user, 'assigned_property_id', None):
+                    prop_ids.add(user.assigned_property_id)
+                elif getattr(user, 'property_id', None):
+                    prop_ids.add(user.property_id)
+                    
+                if prop_ids:
+                    qs = qs.filter(id__in=list(prop_ids))
+                else:
+                    qs = qs.none()
+
         if self.action == 'list':
             return qs.annotate(
                 total_rooms=Count('rooms', distinct=True),
@@ -49,7 +73,8 @@ class PropertyViewSet(TenantScopedViewSet):
     def dropdown_selector(self, request):
         """High-speed endpoint for booking/expense form dropdowns with in-memory caching"""
         tenant_id = getattr(request.user, 'tenant_id', None) or 'global'
-        cache_key = f"tenant_{tenant_id}_property_selector"
+        user_id = getattr(request.user, 'id', 'anon')
+        cache_key = f"tenant_{tenant_id}_user_{user_id}_property_selector"
 
         cached_data = cache.get(cache_key)
         if cached_data is not None:

@@ -1,3 +1,5 @@
+# pyright: ignore[reportMissingImports]
+# pyrefly: ignore [missing-import]
 from decimal import Decimal
 from datetime import date
 from django.db import transaction
@@ -16,16 +18,16 @@ class StaffService:
         name: str,
         position: str,
         phone_number: str = '',
-        property_obj: Property = None,
+        property_obj: Property | None = None,
         monthly_salary: Decimal = Decimal('0.00'),
         department: str = '',
-        hired_date: date = None,
+        hired_date: date | None = None,
         is_active: bool = True,
         enable_login: bool = False,
-        username: str = None,
-        email: str = None,
-        password: str = None,
-        custom_role_id: int = None,
+        username: str | None = None,
+        email: str | None = None,
+        password: str | None = None,
+        custom_role_id: int | None = None,
     ) -> StaffProfile:
         """
         SSOT creation of a staff member.
@@ -103,19 +105,19 @@ class StaffService:
     @transaction.atomic
     def update_staff_member(
         staff_profile: StaffProfile,
-        name: str = None,
-        position: str = None,
-        phone_number: str = None,
-        property_obj: Property = None,
-        monthly_salary: Decimal = None,
-        department: str = None,
-        hired_date: date = None,
-        is_active: bool = None,
-        enable_login: bool = None,
-        username: str = None,
-        email: str = None,
-        password: str = None,
-        custom_role_id: int = None,
+        name: str | None = None,
+        position: str | None = None,
+        phone_number: str | None = None,
+        property_obj: Property | None = None,
+        monthly_salary: Decimal | None = None,
+        department: str | None = None,
+        hired_date: date | None = None,
+        is_active: bool | None = None,
+        enable_login: bool | None = None,
+        username: str | None = None,
+        email: str | None = None,
+        password: str | None = None,
+        custom_role_id: int | None = None,
     ) -> StaffProfile:
         """
         SSOT update of a staff member & linked portal login account.
@@ -233,7 +235,7 @@ class StaffService:
             user_obj.delete()
 
     @staticmethod
-    def calculate_monthly_payroll(tenant_id: int, property_id: int = None) -> Decimal:
+    def calculate_monthly_payroll(tenant_id: int, property_id: int | None = None) -> Decimal:
         """
         SSOT calculation of total active staff payroll per month.
         """

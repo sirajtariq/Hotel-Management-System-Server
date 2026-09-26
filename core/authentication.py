@@ -1,6 +1,9 @@
-from rest_framework_simplejwt.authentication import JWTAuthentication
+from rest_framework_simplejwt.authentication import JWTAuthentication, AuthUser
 from rest_framework_simplejwt.settings import api_settings
 from rest_framework_simplejwt.exceptions import InvalidToken, AuthenticationFailed
+from rest_framework_simplejwt.tokens import Token
+from rest_framework.request import Request
+from typing import cast
 from django.contrib.auth import get_user_model
 from apps.tenants.models import Tenant
 
@@ -12,7 +15,7 @@ class CustomJWTAuthentication(JWTAuthentication):
     to prevent extra N+1 database queries on every authenticated request.
     Also handles tenant resolution via X-Tenant-ID header / tenant_id param for SuperAdmins.
     """
-    def authenticate(self, request):
+    def authenticate(self, request: Request) -> tuple[AuthUser, Token] | None:
         header = self.get_header(request)
         if header is None:
             return None
@@ -36,11 +39,11 @@ class CustomJWTAuthentication(JWTAuthentication):
                 if tenant:
                     user.tenant = tenant
                     user.tenant_id = tenant.id
-                    request.tenant = tenant
+                    request.tenant = tenant  # type: ignore
 
         return user, validated_token
 
-    def get_user(self, validated_token):
+    def get_user(self, validated_token: Token) -> AuthUser:
         try:
             user_id = validated_token[api_settings.USER_ID_CLAIM]
         except KeyError:
@@ -54,4 +57,4 @@ class CustomJWTAuthentication(JWTAuthentication):
         if not user.is_active:
             raise AuthenticationFailed("User is inactive", code="user_inactive")
 
-        return user
+        return cast(AuthUser, user)

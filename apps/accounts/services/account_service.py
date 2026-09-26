@@ -61,6 +61,7 @@ class AccountService:
         transfer_date=None,
         reference_number: str = "",
         notes: str = "",
+        receipt_image=None,
         user=None
     ):
         """
@@ -130,6 +131,7 @@ class AccountService:
             transfer_date=transfer_date or timezone.now().date(),
             reference_number=reference_number,
             notes=notes,
+            receipt_image=receipt_image,
             created_by=user
         )
 

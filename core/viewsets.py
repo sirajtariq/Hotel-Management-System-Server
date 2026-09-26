@@ -1,5 +1,8 @@
+# pyright: ignore[reportMissingImports]
+# pyrefly: ignore [missing-import]
 from rest_framework import viewsets, exceptions
 from core.permissions import HasTenantAccess
+from rest_framework.permissions import BasePermission
 
 class TenantScopedViewSet(viewsets.ModelViewSet):
     """
@@ -7,7 +10,7 @@ class TenantScopedViewSet(viewsets.ModelViewSet):
     Automatically scopes get_queryset() to request.user.tenant_id for non-SuperAdmins.
     Allows SuperAdmin unrestricted access across all tenants and properties.
     """
-    permission_classes = [HasTenantAccess]
+    permission_classes: list[type[BasePermission]] = [HasTenantAccess]
 
     def get_queryset(self):
         queryset = super().get_queryset()
@@ -17,12 +20,13 @@ class TenantScopedViewSet(viewsets.ModelViewSet):
             return queryset.none()
 
         role_upper = getattr(user, 'role', '').upper()
-        is_superadmin = bool(user.is_superuser or role_upper in ['SUPERADMIN', 'SUPER_ADMIN'])
+        is_superadmin = bool(getattr(user, 'is_superuser', False) or role_upper in ['SUPERADMIN', 'SUPER_ADMIN'])
 
         # 👑 1. SuperAdmin: Unrestricted access to everything (optional filter via header / query params)
         if is_superadmin:
-            tenant_id = self.request.headers.get('X-Tenant-ID') or self.request.query_params.get('tenant_id') or getattr(user, 'tenant_id', None)
-            property_id = self.request.query_params.get('property_id')
+            query_params = getattr(self.request, 'query_params', getattr(self.request, 'GET', {}))
+            tenant_id = self.request.headers.get('X-Tenant-ID') or query_params.get('tenant_id') or getattr(user, 'tenant_id', None)
+            property_id = query_params.get('property_id')
             if tenant_id and hasattr(queryset.model, 'tenant'):
                 queryset = queryset.filter(tenant_id=tenant_id)
             if property_id and hasattr(queryset.model, 'property'):
@@ -71,17 +75,19 @@ class TenantScopedViewSet(viewsets.ModelViewSet):
                 tenant = Tenant.objects.filter(id=user.tenant_id).first()
 
             role_upper = getattr(user, 'role', '').upper()
-            is_superadmin = bool(user.is_superuser or role_upper in ['SUPERADMIN', 'SUPER_ADMIN'])
+            is_superadmin = bool(getattr(user, 'is_superuser', False) or role_upper in ['SUPERADMIN', 'SUPER_ADMIN'])
 
             if is_superadmin:
                 if 'tenant' not in serializer.validated_data or not serializer.validated_data.get('tenant'):
                     if tenant:
                         serializer.save(tenant=tenant)
-                    elif 'tenant_id' in self.request.data or 'X-Tenant-ID' in self.request.headers:
-                        t_id = self.request.data.get('tenant_id') or self.request.headers.get('X-Tenant-ID')
-                        serializer.save(tenant_id=t_id)
                     else:
-                        serializer.save()
+                        request_data = getattr(self.request, 'data', {})
+                        if 'tenant_id' in request_data or 'X-Tenant-ID' in self.request.headers:
+                            t_id = request_data.get('tenant_id') or self.request.headers.get('X-Tenant-ID')
+                            serializer.save(tenant_id=t_id)
+                        else:
+                            serializer.save()
                 else:
                     serializer.save()
             else:

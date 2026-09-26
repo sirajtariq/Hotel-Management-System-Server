@@ -1,9 +1,10 @@
 from rest_framework import serializers
+from decimal import Decimal
 from apps.expenses.models import Expense, AccountHead, ExpenseCategory
 
 class AccountHeadSerializer(serializers.ModelSerializer):
     expenses_count = serializers.IntegerField(read_only=True, default=0)
-    total_spent_amount = serializers.DecimalField(max_digits=12, decimal_places=2, read_only=True, default=0)
+    total_spent_amount = serializers.DecimalField(max_digits=12, decimal_places=2, read_only=True, default=Decimal('0.00'))
 
     class Meta:
         model = AccountHead

@@ -23,7 +23,7 @@ class TenantViewSet(viewsets.ModelViewSet):
         user = self.request.user
         if not user or not user.is_authenticated:
             return Tenant.objects.none()
-        if user.is_superuser or getattr(user, 'role', '') == 'SUPERADMIN':
+        if getattr(user, 'is_superuser', False) or getattr(user, 'role', '') == 'SUPERADMIN':
             tenants = Tenant.objects.annotate(
                 current_properties_count=Count('properties', distinct=True),
                 current_rooms_count=Count('properties__rooms', distinct=True),

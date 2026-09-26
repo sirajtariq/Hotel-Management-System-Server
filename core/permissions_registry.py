@@ -40,6 +40,10 @@ PERMISSIONS_CATALOG = {
     ],
     "Roles & Access": [
         {"code": "roles:manage", "name": "Create & Manage Custom Roles & Permissions"},
+    ],
+    "Finance & Accounts": [
+        {"code": "accounts:view", "name": "View Payment Accounts & Account Heads"},
+        {"code": "accounts:manage", "name": "Create, Edit & Delete Payment Accounts & Account Heads"},
     ]
 }
 

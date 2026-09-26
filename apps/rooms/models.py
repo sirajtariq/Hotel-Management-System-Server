@@ -1,3 +1,5 @@
+# pyright: ignore[reportMissingImports]
+# pyrefly: ignore [missing-import]
 from django.db import models
 from django.core.cache import cache
 from apps.tenants.models import Tenant

@@ -2,6 +2,7 @@ import io
 import csv
 from decimal import Decimal
 from datetime import date
+from typing import Optional
 from django.db import transaction
 from django.db.models import Sum
 from rest_framework.exceptions import ValidationError
@@ -42,16 +43,16 @@ class ExpenseService:
     def create_expense(
         tenant: Tenant,
         property_obj: Property,
-        account_head: AccountHead = None,
-        category: ExpenseCategory = None,
+        account_head: Optional[AccountHead] = None,
+        category: Optional[ExpenseCategory] = None,
         item_name: str = '',
         amount: Decimal = Decimal('0.00'),
-        expense_date: date = None,
+        expense_date: Optional[date] = None,
         payment_method: str = 'CASH',
         vendor_name: str = '',
         receipt_number: str = '',
         description: str = '',
-        created_by: User = None
+        created_by: Optional[User] = None
     ) -> Expense:
         """
         SSOT function to record an expense transaction.
@@ -87,7 +88,7 @@ class ExpenseService:
             property=property_obj,
             account_head=account_head,
             category=category,
-            item_name=item_name or account_head.name,
+            item_name=item_name or (account_head.name if account_head else (category.name if category else '')),
             amount=amount,
             expense_date=expense_date,
             payment_method=payment_method,
@@ -99,7 +100,7 @@ class ExpenseService:
         return expense
 
     @staticmethod
-    def calculate_total_expenses(tenant_id: int, property_id: int = None, start_date: date = None, end_date: date = None) -> Decimal:
+    def calculate_total_expenses(tenant_id: int, property_id: Optional[int] = None, start_date: Optional[date] = None, end_date: Optional[date] = None) -> Decimal:
         """
         SSOT function to compute total raw operational expenses for financial reporting.
         """
@@ -117,11 +118,11 @@ class ExpenseService:
     @staticmethod
     def export_expenses_csv(
         tenant_id: int,
-        property_id: int = None,
-        start_date: date = None,
-        end_date: date = None,
-        account_head_id: int = None,
-        payment_method: str = None
+        property_id: Optional[int] = None,
+        start_date: Optional[date] = None,
+        end_date: Optional[date] = None,
+        account_head_id: Optional[int] = None,
+        payment_method: Optional[str] = None
     ) -> str:
         """
         SSOT function to export Expense records as Excel-compatible CSV with UTF-8 BOM ('\ufeff').

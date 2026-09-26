@@ -4,11 +4,14 @@ from apps.accounts.models import PaymentAccount, AccountTransaction, AccountTran
 
 class PaymentAccountSerializer(serializers.ModelSerializer):
     transactions_count = serializers.IntegerField(read_only=True, default=0)
+    property_name = serializers.CharField(source='property.name', read_only=True)
 
     class Meta:
         model = PaymentAccount
         fields = [
             'id',
+            'property',
+            'property_name',
             'name',
             'account_type',
             'bank_name',
@@ -84,6 +87,7 @@ class AccountTransferSerializer(serializers.ModelSerializer):
             'transfer_date',
             'reference_number',
             'notes',
+            'receipt_image',
             'created_by_name',
             'created_at',
         ]
@@ -102,3 +106,4 @@ class CreateTransferSerializer(serializers.Serializer):
     transfer_date = serializers.DateField(required=False, allow_null=True)
     reference_number = serializers.CharField(max_length=80, required=False, allow_blank=True)
     notes = serializers.CharField(required=False, allow_blank=True)
+    receipt_image = serializers.FileField(required=False, allow_null=True)

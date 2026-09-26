@@ -6,9 +6,9 @@ from apps.users.models import User
 class UserAdmin(BaseUserAdmin):
     list_display = ('username', 'email', 'role', 'tenant', 'is_staff', 'is_active')
     list_filter = ('role', 'tenant', 'is_staff', 'is_active')
-    fieldsets = BaseUserAdmin.fieldsets + (
+    fieldsets = tuple(BaseUserAdmin.fieldsets or ()) + (
         ('Tenant & Role Info', {'fields': ('tenant', 'role', 'phone_number')}),
     )
-    add_fieldsets = BaseUserAdmin.add_fieldsets + (
+    add_fieldsets = tuple(BaseUserAdmin.add_fieldsets or ()) + (
         ('Tenant & Role Info', {'fields': ('tenant', 'role', 'phone_number')}),
     )
